@@ -13,16 +13,6 @@ output "azure_ml_compute_cluster_id" {
   value       = azurerm_machine_learning_compute_cluster.training.id
 }
 
-output "azure_ml_endpoint_id" {
-  description = "Resource ID of the online inference endpoint"
-  value       = azurerm_machine_learning_online_endpoint.inference.id
-}
-
-output "azure_ml_endpoint_scoring_uri" {
-  description = "Scoring URI of the online inference endpoint"
-  value       = azurerm_machine_learning_online_endpoint.inference.scoring_uri
-}
-
 output "azure_ml_principal_id" {
   description = "Principal ID of the Azure ML Workspace system-assigned identity"
   value       = azurerm_machine_learning_workspace.main.identity[0].principal_id

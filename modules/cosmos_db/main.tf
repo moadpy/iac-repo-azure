@@ -45,7 +45,7 @@ resource "azurerm_cosmosdb_sql_container" "sessions" {
   resource_group_name = var.resource_group_name
   account_name        = azurerm_cosmosdb_account.main.name
   database_name       = azurerm_cosmosdb_sql_database.maintenance.name
-  partition_key_path  = "/session_id"
+  partition_key_paths = ["/session_id"]
 
   indexing_policy {
     indexing_mode = "consistent"

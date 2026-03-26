@@ -55,19 +55,6 @@ resource "azurerm_machine_learning_compute_cluster" "training" {
   }
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Online Endpoint for real-time inference
-# ─────────────────────────────────────────────────────────────────────────────
-
-resource "azurerm_machine_learning_online_endpoint" "inference" {
-  name                          = "ep-predmaint-${var.env}"
-  location                      = var.location
-  machine_learning_workspace_id = azurerm_machine_learning_workspace.main.id
-  auth_mode                     = "Key"
-  public_network_access_enabled = false
-  tags                          = var.tags
-
-  identity {
-    type = "SystemAssigned"
-  }
-}
+# Online Endpoint (azurerm_machine_learning_online_endpoint) is only available
+# in azurerm >= 4.0. With provider ~> 3.100 the endpoint must be created via
+# the Azure ML CLI/SDK after the workspace is provisioned.
