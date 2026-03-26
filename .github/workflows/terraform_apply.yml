@@ -118,6 +118,5 @@ jobs:
         run: |
           terraform apply \
             -var-file="environments/${{ steps.env.outputs.name }}.tfvars" \
-            -var="resource_group_name=$TF_STATE_RG" \
             -auto-approve \
             -input=false
