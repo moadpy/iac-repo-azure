@@ -54,15 +54,10 @@ jobs:
             --allow-no-subscriptions \
             --output none
           TENANT_ID=$(az account list --all --query "[0].tenantId" -o tsv)
-          SUB_ID=$(az account list --all \
-            --query "[?name != 'N/A(tenant level account)'].id | [0]" -o tsv)
-          if [ -z "$SUB_ID" ]; then
-            SUB_ID="${{ secrets.AZURE_SUBSCRIPTION_ID }}"
-          fi
-          echo "ARM_TENANT_ID=$TENANT_ID"       >> "$GITHUB_ENV"
-          echo "ARM_SUBSCRIPTION_ID=$SUB_ID"    >> "$GITHUB_ENV"
-          echo "tenant_id=$TENANT_ID"           >> "$GITHUB_OUTPUT"
-          echo "subscription_id=$SUB_ID"        >> "$GITHUB_OUTPUT"
+          echo "ARM_TENANT_ID=$TENANT_ID"                                  >> "$GITHUB_ENV"
+          echo "ARM_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}" >> "$GITHUB_ENV"
+          echo "tenant_id=$TENANT_ID"                                      >> "$GITHUB_OUTPUT"
+          echo "subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}"     >> "$GITHUB_OUTPUT"
 
       # Derive the same deterministic SA name used by the apply workflow.
       - name: Resolve backend coordinates

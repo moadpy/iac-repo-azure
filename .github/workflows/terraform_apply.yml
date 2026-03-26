@@ -65,16 +65,11 @@ jobs:
             --tenant  "$TENANT_DOMAIN" \
             --allow-no-subscriptions \
             --output none
-          # With RG-scoped SP, the subscription still appears in account list
+          # SP is RG-scoped: az account list returns a tenant-level entry, not a real
+          # subscription. Use the subscription ID secret directly.
           TENANT_ID=$(az account list --all --query "[0].tenantId" -o tsv)
-          SUB_ID=$(az account list --all \
-            --query "[?name != 'N/A(tenant level account)'].id | [0]" -o tsv)
-          # Fallback: if account list has no subscription, use the secret directly
-          if [ -z "$SUB_ID" ]; then
-            SUB_ID="${{ secrets.AZURE_SUBSCRIPTION_ID }}"
-          fi
-          echo "ARM_TENANT_ID=$TENANT_ID"    >> "$GITHUB_ENV"
-          echo "ARM_SUBSCRIPTION_ID=$SUB_ID" >> "$GITHUB_ENV"
+          echo "ARM_TENANT_ID=$TENANT_ID"                                  >> "$GITHUB_ENV"
+          echo "ARM_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}" >> "$GITHUB_ENV"
 
       # ── Bootstrap: idempotent creation of Terraform state backend ──────────
       # Discover the existing sandbox RG (SP cannot create new ones).
