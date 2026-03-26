@@ -71,8 +71,8 @@ variable "aks_node_count_max" {
   type        = number
   default     = 4
   validation {
-    condition     = var.aks_node_count_max >= var.aks_node_count_min
-    error_message = "Maximum AKS node count must be >= minimum node count."
+    condition     = var.aks_node_count_max >= 1
+    error_message = "Maximum AKS node count must be at least 1."
   }
 }
 
