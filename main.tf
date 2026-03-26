@@ -10,9 +10,9 @@ terraform {
 }
 
 provider "azurerm" {
-  # Sandbox SP has no permission to register/unregister resource providers
-  # at subscription scope — disable automatic registration.
-  resource_provider_registrations = "none"
+  # Sandbox SP has no permission to register resource providers at subscription
+  # scope — skip automatic registration (works on all azurerm 3.x versions).
+  skip_provider_registration = true
 
   features {
     key_vault {
