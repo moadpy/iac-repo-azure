@@ -37,7 +37,7 @@ resource "azurerm_subnet" "database" {
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.database_subnet_cidrs[count.index]]
 
-  private_endpoint_network_policies_enabled = false
+  private_endpoint_network_policies = "Disabled"
 }
 
 # ─── Application Gateway Subnet ───────────────────────────────────────────────

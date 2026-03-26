@@ -12,7 +12,7 @@ resource "azurerm_storage_account" "frontend" {
 
   allow_nested_items_to_be_public  = true
   public_network_access_enabled    = true
-  enable_https_traffic_only        = true
+  https_traffic_only_enabled        = true
   min_tls_version                  = "TLS1_2"
 
   static_website {
@@ -37,7 +37,7 @@ resource "azurerm_storage_account" "ml_data" {
 
   allow_nested_items_to_be_public = false
   public_network_access_enabled   = false
-  enable_https_traffic_only       = true
+  https_traffic_only_enabled       = true
   min_tls_version                 = "TLS1_2"
 
   blob_properties {

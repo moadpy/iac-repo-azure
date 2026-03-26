@@ -10,6 +10,10 @@ terraform {
 }
 
 provider "azurerm" {
+  # Sandbox SP has no permission to register/unregister resource providers
+  # at subscription scope — disable automatic registration.
+  resource_provider_registrations = "none"
+
   features {
     key_vault {
       purge_soft_delete_on_destroy = true

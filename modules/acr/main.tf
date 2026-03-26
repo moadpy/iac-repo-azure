@@ -9,6 +9,5 @@ resource "azurerm_container_registry" "main" {
   sku                           = "Premium"
   admin_enabled                 = false
   public_network_access_enabled = false
-  zone_redundancy_enabled       = true
   tags                          = var.tags
 }
