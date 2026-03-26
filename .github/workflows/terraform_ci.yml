@@ -58,20 +58,29 @@ jobs:
           echo "tenant_id=$TENANT_ID"           >> "$GITHUB_OUTPUT"
           echo "subscription_id=$SUB_ID"        >> "$GITHUB_OUTPUT"
 
-      - name: Verify backend storage exists
+      # Derive the same deterministic SA name used by the apply workflow.
+      - name: Resolve backend coordinates
         run: |
-          az storage account show \
-            --name "${{ secrets.TF_STATE_STORAGE_ACCOUNT }}" \
-            --resource-group "rg-terraform-state" \
-            --query "name" -o tsv
+          STATE_RG=$(az group list \
+            --query "[?!starts_with(name, 'MC_')].name | [0]" \
+            -o tsv)
+          SA_NAME="tfstate$(echo "$ARM_SUBSCRIPTION_ID" | tr -d '-' | cut -c1-17)"
+          echo "TF_STATE_RG=$STATE_RG" >> "$GITHUB_ENV"
+          echo "TF_STATE_SA=$SA_NAME"  >> "$GITHUB_ENV"
 
       - name: Terraform Init
         run: |
+          SA_KEY=$(az storage account keys list \
+            --account-name "$TF_STATE_SA" \
+            --resource-group "$TF_STATE_RG" \
+            --query "[0].value" -o tsv)
+
           terraform init \
-            -backend-config="resource_group_name=rg-terraform-state" \
-            -backend-config="storage_account_name=${{ secrets.TF_STATE_STORAGE_ACCOUNT }}" \
+            -backend-config="resource_group_name=$TF_STATE_RG" \
+            -backend-config="storage_account_name=$TF_STATE_SA" \
             -backend-config="container_name=tfstate" \
-            -backend-config="key=${{ steps.env.outputs.name }}/terraform.tfstate"
+            -backend-config="key=${{ steps.env.outputs.name }}/terraform.tfstate" \
+            -backend-config="access_key=$SA_KEY"
 
       - name: Terraform Validate
         run: terraform validate

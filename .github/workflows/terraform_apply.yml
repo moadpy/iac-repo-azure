@@ -68,7 +68,9 @@ jobs:
           echo "ARM_SUBSCRIPTION_ID=$SUB_ID" >> "$GITHUB_ENV"
 
       # ── Bootstrap: idempotent creation of Terraform state backend ──────────
-      # The sandbox SP cannot create resource groups — discover the existing one.
+      # Discover the existing sandbox RG (SP cannot create new ones).
+      # Derive a deterministic storage account name from the subscription ID
+      # so no extra secret is required (Azure SA names: 3-24 lowercase alphanum).
       - name: Bootstrap Terraform state backend
         run: |
           EXISTING_RG=$(az group list \
@@ -76,26 +78,41 @@ jobs:
             -o tsv)
           echo "TF_STATE_RG=$EXISTING_RG" >> "$GITHUB_ENV"
 
+          SA_NAME="tfstate$(echo "$ARM_SUBSCRIPTION_ID" | tr -d '-' | cut -c1-17)"
+          echo "TF_STATE_SA=$SA_NAME" >> "$GITHUB_ENV"
+
           az storage account create \
-            --name "${{ secrets.TF_STATE_STORAGE_ACCOUNT }}" \
+            --name "$SA_NAME" \
             --resource-group "$EXISTING_RG" \
             --sku Standard_LRS \
+            --min-tls-version TLS1_2 \
             --allow-blob-public-access false \
             --output none
 
+          SA_KEY=$(az storage account keys list \
+            --account-name "$SA_NAME" \
+            --resource-group "$EXISTING_RG" \
+            --query "[0].value" -o tsv)
+
           az storage container create \
             --name tfstate \
-            --account-name "${{ secrets.TF_STATE_STORAGE_ACCOUNT }}" \
-            --auth-mode login \
+            --account-name "$SA_NAME" \
+            --account-key "$SA_KEY" \
             --output none
 
       - name: Terraform Init
         run: |
+          SA_KEY=$(az storage account keys list \
+            --account-name "$TF_STATE_SA" \
+            --resource-group "$TF_STATE_RG" \
+            --query "[0].value" -o tsv)
+
           terraform init \
             -backend-config="resource_group_name=$TF_STATE_RG" \
-            -backend-config="storage_account_name=${{ secrets.TF_STATE_STORAGE_ACCOUNT }}" \
+            -backend-config="storage_account_name=$TF_STATE_SA" \
             -backend-config="container_name=tfstate" \
-            -backend-config="key=${{ steps.env.outputs.name }}/terraform.tfstate"
+            -backend-config="key=${{ steps.env.outputs.name }}/terraform.tfstate" \
+            -backend-config="access_key=$SA_KEY"
 
       - name: Terraform Apply
         run: |
