@@ -51,17 +51,19 @@ jobs:
             echo "name=preprod" >> "$GITHUB_OUTPUT"
           fi
 
-      # Login with user credentials to extract tenant ID and subscription ID.
-      # These are written into GITHUB_ENV so all subsequent steps (including
-      # Terraform) pick them up as ARM_TENANT_ID / ARM_SUBSCRIPTION_ID.
+      # Derive the tenant domain from the username email (user@tenant.onmicrosoft.com)
+      # then login as a service principal — avoids MFA/device-flow entirely.
       - name: Azure login & resolve tenant/subscription
         run: |
-          LOGIN=$(az login \
-            --username "${{ secrets.AZURE_USERNAME }}" \
-            --password "${{ secrets.AZURE_PASSWORD }}" \
-            --output json)
-          TENANT_ID=$(echo "$LOGIN" | jq -r '.[0].tenantId')
-          SUB_ID=$(echo    "$LOGIN" | jq -r '.[0].id')
+          TENANT_DOMAIN=$(echo "${{ secrets.AZURE_USERNAME }}" | cut -d'@' -f2)
+          az login \
+            --service-principal \
+            --username "${{ secrets.AZURE_CLIENT_ID }}" \
+            --password "${{ secrets.AZURE_CLIENT_SECRET }}" \
+            --tenant  "$TENANT_DOMAIN" \
+            --output none
+          TENANT_ID=$(az account show --query tenantId -o tsv)
+          SUB_ID=$(az account show --query id       -o tsv)
           echo "ARM_TENANT_ID=$TENANT_ID"    >> "$GITHUB_ENV"
           echo "ARM_SUBSCRIPTION_ID=$SUB_ID" >> "$GITHUB_ENV"
 
