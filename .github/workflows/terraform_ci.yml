@@ -41,6 +41,7 @@ jobs:
 
       # Derive tenant domain from username email, then login as service principal.
       # This avoids MFA / device-flow that blocks non-interactive user logins.
+      # --allow-no-subscriptions: SP is scoped to RG only (no subscription-level role).
       - name: Azure login & resolve tenant/subscription
         id: azure
         run: |
@@ -50,9 +51,14 @@ jobs:
             --username "${{ secrets.AZURE_CLIENT_ID }}" \
             --password "${{ secrets.AZURE_CLIENT_SECRET }}" \
             --tenant  "$TENANT_DOMAIN" \
+            --allow-no-subscriptions \
             --output none
-          TENANT_ID=$(az account show --query tenantId -o tsv)
-          SUB_ID=$(az account show --query id       -o tsv)
+          TENANT_ID=$(az account list --all --query "[0].tenantId" -o tsv)
+          SUB_ID=$(az account list --all \
+            --query "[?name != 'N/A(tenant level account)'].id | [0]" -o tsv)
+          if [ -z "$SUB_ID" ]; then
+            SUB_ID="${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+          fi
           echo "ARM_TENANT_ID=$TENANT_ID"       >> "$GITHUB_ENV"
           echo "ARM_SUBSCRIPTION_ID=$SUB_ID"    >> "$GITHUB_ENV"
           echo "tenant_id=$TENANT_ID"           >> "$GITHUB_OUTPUT"
