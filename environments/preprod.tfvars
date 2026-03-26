@@ -1,6 +1,9 @@
 env      = "preprod"
 location = "westeurope"
 
+# Sandbox: set this to the resource group name shown in your Pluralsight portal
+resource_group_name = "your-sandbox-resource-group"
+
 vnet_cidr             = "10.0.0.0/16"
 public_subnet_cidrs   = ["10.0.100.0/24", "10.0.101.0/24"]
 private_subnet_cidrs  = ["10.0.0.0/24", "10.0.1.0/24"]

@@ -1,3 +1,8 @@
+variable "resource_group_name" {
+  description = "Name of the pre-existing resource group (sandbox: SP cannot create RGs)"
+  type        = string
+}
+
 variable "env" {
   description = "Deployment environment name (preprod or prod)"
   type        = string

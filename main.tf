@@ -28,10 +28,9 @@ locals {
   )
 }
 
-resource "azurerm_resource_group" "main" {
-  name     = "rg-predictive-maintenance-${var.env}"
-  location = var.location
-  tags     = local.common_tags
+# Sandbox: the SP cannot create resource groups — reference the pre-existing one.
+data "azurerm_resource_group" "main" {
+  name = var.resource_group_name
 }
 
 # ─────────────────────────────────────────
@@ -40,7 +39,7 @@ resource "azurerm_resource_group" "main" {
 module "monitoring" {
   source = "./modules/monitoring"
 
-  resource_group_name = azurerm_resource_group.main.name
+  resource_group_name = data.azurerm_resource_group.main.name
   location            = var.location
   env                 = var.env
   tags                = local.common_tags
@@ -52,7 +51,7 @@ module "monitoring" {
 module "acr" {
   source = "./modules/acr"
 
-  resource_group_name = azurerm_resource_group.main.name
+  resource_group_name = data.azurerm_resource_group.main.name
   location            = var.location
   env                 = var.env
   tags                = local.common_tags
@@ -64,7 +63,7 @@ module "acr" {
 module "storage" {
   source = "./modules/storage"
 
-  resource_group_name = azurerm_resource_group.main.name
+  resource_group_name = data.azurerm_resource_group.main.name
   location            = var.location
   env                 = var.env
   tags                = local.common_tags
@@ -76,7 +75,7 @@ module "storage" {
 module "cosmos_db" {
   source = "./modules/cosmos_db"
 
-  resource_group_name = azurerm_resource_group.main.name
+  resource_group_name = data.azurerm_resource_group.main.name
   location            = var.location
   env                 = var.env
   tags                = local.common_tags
@@ -88,7 +87,7 @@ module "cosmos_db" {
 module "vnet" {
   source = "./modules/vnet"
 
-  resource_group_name   = azurerm_resource_group.main.name
+  resource_group_name   = data.azurerm_resource_group.main.name
   location              = var.location
   env                   = var.env
   vnet_cidr             = var.vnet_cidr
@@ -104,7 +103,7 @@ module "vnet" {
 module "key_vault" {
   source = "./modules/key_vault"
 
-  resource_group_name   = azurerm_resource_group.main.name
+  resource_group_name   = data.azurerm_resource_group.main.name
   location              = var.location
   env                   = var.env
   cosmos_db_primary_key = module.cosmos_db.cosmos_db_primary_key
@@ -118,7 +117,7 @@ module "key_vault" {
 module "ai_search" {
   source = "./modules/ai_search"
 
-  resource_group_name = azurerm_resource_group.main.name
+  resource_group_name = data.azurerm_resource_group.main.name
   location            = var.location
   env                 = var.env
   search_sku          = var.search_sku
@@ -134,7 +133,7 @@ module "ai_search" {
 module "azure_openai" {
   source = "./modules/azure_openai"
 
-  resource_group_name              = azurerm_resource_group.main.name
+  resource_group_name              = data.azurerm_resource_group.main.name
   location                         = var.location
   env                              = var.env
   openai_gpt_model                 = var.openai_gpt_model
@@ -150,7 +149,7 @@ module "azure_openai" {
 module "azure_ml" {
   source = "./modules/azure_ml"
 
-  resource_group_name        = azurerm_resource_group.main.name
+  resource_group_name        = data.azurerm_resource_group.main.name
   location                   = var.location
   env                        = var.env
   key_vault_id               = module.key_vault.key_vault_id
@@ -169,7 +168,7 @@ module "azure_ml" {
 module "aks" {
   source = "./modules/aks"
 
-  resource_group_name        = azurerm_resource_group.main.name
+  resource_group_name        = data.azurerm_resource_group.main.name
   location                   = var.location
   env                        = var.env
   private_subnet_ids         = module.vnet.private_subnet_ids
@@ -188,7 +187,7 @@ module "aks" {
 module "application_gateway" {
   source = "./modules/application_gateway"
 
-  resource_group_name = azurerm_resource_group.main.name
+  resource_group_name = data.azurerm_resource_group.main.name
   location            = var.location
   env                 = var.env
   appgw_subnet_id     = module.vnet.appgw_subnet_id
@@ -201,7 +200,7 @@ module "application_gateway" {
 module "azure_functions" {
   source = "./modules/azure_functions"
 
-  resource_group_name        = azurerm_resource_group.main.name
+  resource_group_name        = data.azurerm_resource_group.main.name
   location                   = var.location
   env                        = var.env
   storage_account_id         = module.storage.ml_storage_account_id
@@ -215,7 +214,7 @@ module "azure_functions" {
 module "front_door" {
   source = "./modules/front_door"
 
-  resource_group_name  = azurerm_resource_group.main.name
+  resource_group_name  = data.azurerm_resource_group.main.name
   location             = var.location
   env                  = var.env
   frontend_web_endpoint = module.storage.frontend_web_endpoint
@@ -229,7 +228,7 @@ module "front_door" {
 module "private_endpoints" {
   source = "./modules/private_endpoints"
 
-  resource_group_name  = azurerm_resource_group.main.name
+  resource_group_name  = data.azurerm_resource_group.main.name
   location             = var.location
   env                  = var.env
   vnet_id              = module.vnet.vnet_id
