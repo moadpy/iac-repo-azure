@@ -1,0 +1,102 @@
+name: Terraform Apply
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment (preprod or prod)"
+        required: true
+        default: "preprod"
+        type: choice
+        options:
+          - preprod
+          - prod
+
+permissions:
+  contents: read
+
+env:
+  TF_VERSION: "1.7.5"
+  TF_STATE_RG: "rg-terraform-state"
+  # SP credentials for Terraform provider (tenant + subscription resolved at runtime)
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+
+jobs:
+  terraform-apply:
+    name: Apply
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Determine environment
+        id: env
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "name=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "name=prod" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=preprod" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Login with user credentials to extract tenant ID and subscription ID.
+      # These are written into GITHUB_ENV so all subsequent steps (including
+      # Terraform) pick them up as ARM_TENANT_ID / ARM_SUBSCRIPTION_ID.
+      - name: Azure login & resolve tenant/subscription
+        run: |
+          LOGIN=$(az login \
+            --username "${{ secrets.AZURE_USERNAME }}" \
+            --password "${{ secrets.AZURE_PASSWORD }}" \
+            --output json)
+          TENANT_ID=$(echo "$LOGIN" | jq -r '.[0].tenantId')
+          SUB_ID=$(echo    "$LOGIN" | jq -r '.[0].id')
+          echo "ARM_TENANT_ID=$TENANT_ID"    >> "$GITHUB_ENV"
+          echo "ARM_SUBSCRIPTION_ID=$SUB_ID" >> "$GITHUB_ENV"
+
+      # ── Bootstrap: idempotent creation of Terraform state backend ──────────
+      - name: Bootstrap Terraform state backend
+        run: |
+          az group create \
+            --name "${{ env.TF_STATE_RG }}" \
+            --location westeurope \
+            --output none
+
+          az storage account create \
+            --name "${{ secrets.TF_STATE_STORAGE_ACCOUNT }}" \
+            --resource-group "${{ env.TF_STATE_RG }}" \
+            --sku Standard_LRS \
+            --allow-blob-public-access false \
+            --output none
+
+          az storage container create \
+            --name tfstate \
+            --account-name "${{ secrets.TF_STATE_STORAGE_ACCOUNT }}" \
+            --auth-mode login \
+            --output none
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=${{ env.TF_STATE_RG }}" \
+            -backend-config="storage_account_name=${{ secrets.TF_STATE_STORAGE_ACCOUNT }}" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=${{ steps.env.outputs.name }}/terraform.tfstate"
+
+      - name: Terraform Apply
+        run: |
+          terraform apply \
+            -var-file="environments/${{ steps.env.outputs.name }}.tfvars" \
+            -auto-approve \
+            -input=false
