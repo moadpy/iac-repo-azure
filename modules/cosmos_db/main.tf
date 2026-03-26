@@ -19,10 +19,6 @@ resource "azurerm_cosmosdb_account" "main" {
     failover_priority = 0
   }
 
-  capabilities {
-    name = "EnableServerless"
-  }
-
   tags = var.tags
 }
 
@@ -34,6 +30,7 @@ resource "azurerm_cosmosdb_sql_database" "maintenance" {
   name                = "maintenance"
   resource_group_name = var.resource_group_name
   account_name        = azurerm_cosmosdb_account.main.name
+  throughput          = 400
 }
 
 # ─────────────────────────────────────────────────────────────────────────────

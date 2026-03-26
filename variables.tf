@@ -53,7 +53,7 @@ variable "database_subnet_cidrs" {
 variable "aks_node_vm_size" {
   description = "VM size for AKS default node pool"
   type        = string
-  default     = "Standard_DS2_v2"
+  default     = "Standard_D2s_v3"
 }
 
 variable "aks_node_count_min" {
@@ -69,7 +69,7 @@ variable "aks_node_count_min" {
 variable "aks_node_count_max" {
   description = "Maximum node count for AKS autoscaler"
   type        = number
-  default     = 4
+  default     = 3
   validation {
     condition     = var.aks_node_count_max >= 1
     error_message = "Maximum AKS node count must be at least 1."
@@ -95,7 +95,7 @@ variable "ml_compute_vm_size" {
 variable "ml_compute_max_nodes" {
   description = "Maximum node count for Azure ML compute cluster"
   type        = number
-  default     = 2
+  default     = 1
   validation {
     condition     = var.ml_compute_max_nodes >= 1
     error_message = "ml_compute_max_nodes must be at least 1."
