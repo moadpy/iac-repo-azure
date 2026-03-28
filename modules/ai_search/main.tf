@@ -19,12 +19,4 @@ resource "azurerm_search_service" "main" {
   tags = var.tags
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Grant AKS identity Search Index Data Contributor (for future RBAC use)
-# ─────────────────────────────────────────────────────────────────────────────
-
-resource "azurerm_role_assignment" "aks_search_contributor" {
-  scope                = azurerm_search_service.main.id
-  role_definition_name = "Search Index Data Contributor"
-  principal_id         = var.aks_principal_id
-}
+# Sandbox: roleAssignments/write is blocked — assign Search Index Data Contributor to AKS identity manually.

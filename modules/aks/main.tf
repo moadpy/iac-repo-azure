@@ -11,7 +11,6 @@ resource "azurerm_kubernetes_cluster" "main" {
   location            = var.location
   resource_group_name = var.resource_group_name
   dns_prefix          = "aks-${var.env}"
-  kubernetes_version  = "1.29"
   tags                = var.tags
 
   default_node_pool {
@@ -46,10 +45,6 @@ resource "azurerm_kubernetes_cluster" "main" {
   workload_identity_enabled = true
   oidc_issuer_enabled       = true
 
-  oms_agent {
-    log_analytics_workspace_id = var.log_analytics_workspace_id
-  }
-
   key_vault_secrets_provider {
     secret_rotation_enabled = true
   }
@@ -62,22 +57,4 @@ resource "azurerm_kubernetes_cluster" "main" {
   }
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# AcrPull for the auto-created kubelet identity
-# ─────────────────────────────────────────────────────────────────────────────
-
-resource "azurerm_role_assignment" "aks_acr_pull" {
-  scope                = var.acr_id
-  role_definition_name = "AcrPull"
-  principal_id         = azurerm_kubernetes_cluster.main.kubelet_identity[0].object_id
-}
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Network Contributor on VNet for AKS system identity (Azure CNI requirement)
-# ─────────────────────────────────────────────────────────────────────────────
-
-resource "azurerm_role_assignment" "aks_vnet_contributor" {
-  scope                = var.vnet_id
-  role_definition_name = "Network Contributor"
-  principal_id         = azurerm_kubernetes_cluster.main.identity[0].principal_id
-}
+# Sandbox: roleAssignments/write is blocked — assign AcrPull and Network Contributor manually in the portal.

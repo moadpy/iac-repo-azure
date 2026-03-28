@@ -15,7 +15,7 @@ variable "env" {
 variable "location" {
   description = "Azure region for all resources"
   type        = string
-  default     = "westeurope"
+  default     = "eastus"
 }
 
 variable "vnet_cidr" {

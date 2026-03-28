@@ -150,17 +150,7 @@ resource "azurerm_cdn_frontdoor_firewall_policy" "main" {
   redirect_url                      = null
   custom_block_response_status_code = 403
 
-  managed_rule {
-    type    = "DefaultRuleSet"
-    version = "1.0"
-    action  = "Block"
-  }
-
-  managed_rule {
-    type    = "Microsoft_BotManagerRuleSet"
-    version = "1.0"
-    action  = "Block"
-  }
+  # managed_rule is Premium_AzureFrontDoor only — omitted for Standard SKU
 
   tags = var.tags
 }

@@ -1,1 +1,34 @@
-﻿.terraform/
+# GitHub Actions (Excluded to prevent remote triggering)
+.github/
+
+# Local terraform directory
+.terraform/
+
+# Local state files (used when backend is "local")
+*.tfstate
+*.tfstate.*
+
+# Crash logs
+crash.log
+*.crash.log
+
+# Override files (Crucial for your local/azure backend switching)
+# You can create a local-only override.tf to force backend "local" {}
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Local PowerShell login scripts and artifacts
+interactive-login.ps1
+prog-login.ps1
+state.txt
+*.log
+
+# Documentation 
+AZURE_ARCHITECTURE.md
+service-restrictions.md
+
+# Windows specific
+Thumb.db
+desktop.ini

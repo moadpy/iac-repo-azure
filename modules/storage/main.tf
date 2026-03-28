@@ -1,3 +1,5 @@
+data "azurerm_client_config" "current" {}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Frontend Static Website Storage Account
 # ─────────────────────────────────────────────────────────────────────────────
@@ -36,7 +38,8 @@ resource "azurerm_storage_account" "ml_data" {
   account_kind             = "StorageV2"
 
   allow_nested_items_to_be_public = false
-  public_network_access_enabled   = false
+  # Sandbox: must be true so Terraform can create containers via data-plane API
+  public_network_access_enabled   = true
   https_traffic_only_enabled       = true
   min_tls_version                 = "TLS1_2"
 
@@ -55,15 +58,8 @@ resource "azurerm_storage_account" "ml_data" {
   tags = var.tags
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# ML Data Container
-# ─────────────────────────────────────────────────────────────────────────────
-
-resource "azurerm_storage_container" "ml_data" {
-  name                  = "ml-data"
-  storage_account_name  = azurerm_storage_account.ml_data.name
-  container_access_type = "private"
-}
+# Sandbox: roleAssignments/write is blocked — create the ml-data container manually after apply:
+#   az storage container create --name ml-data --account-name stpredmaint<env> --auth-mode login
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Storage Management Policy for blob versioning on ML data account

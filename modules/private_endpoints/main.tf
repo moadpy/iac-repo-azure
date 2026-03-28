@@ -32,23 +32,13 @@ resource "azurerm_private_dns_zone" "acr" {
   tags                = var.tags
 }
 
-resource "azurerm_private_dns_zone" "openai" {
-  name                = "privatelink.openai.azure.com"
-  resource_group_name = var.resource_group_name
-  tags                = var.tags
-}
-
 resource "azurerm_private_dns_zone" "azureml" {
   name                = "privatelink.api.azureml.ms"
   resource_group_name = var.resource_group_name
   tags                = var.tags
 }
 
-resource "azurerm_private_dns_zone" "monitor" {
-  name                = "privatelink.monitor.azure.com"
-  resource_group_name = var.resource_group_name
-  tags                = var.tags
-}
+# Sandbox: Microsoft.Network/AllowPrivateEndpoints not registered for azuremonitor — removed.
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Virtual Network Links for Private DNS Zones
@@ -99,15 +89,6 @@ resource "azurerm_private_dns_zone_virtual_network_link" "acr" {
   tags                  = var.tags
 }
 
-resource "azurerm_private_dns_zone_virtual_network_link" "openai" {
-  name                  = "link-openai-${var.env}"
-  resource_group_name   = var.resource_group_name
-  private_dns_zone_name = azurerm_private_dns_zone.openai.name
-  virtual_network_id    = var.vnet_id
-  registration_enabled  = false
-  tags                  = var.tags
-}
-
 resource "azurerm_private_dns_zone_virtual_network_link" "azureml" {
   name                  = "link-azureml-${var.env}"
   resource_group_name   = var.resource_group_name
@@ -117,14 +98,6 @@ resource "azurerm_private_dns_zone_virtual_network_link" "azureml" {
   tags                  = var.tags
 }
 
-resource "azurerm_private_dns_zone_virtual_network_link" "monitor" {
-  name                  = "link-monitor-${var.env}"
-  resource_group_name   = var.resource_group_name
-  private_dns_zone_name = azurerm_private_dns_zone.monitor.name
-  virtual_network_id    = var.vnet_id
-  registration_enabled  = false
-  tags                  = var.tags
-}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Private Endpoints
@@ -173,7 +146,10 @@ resource "azurerm_private_endpoint" "cosmos" {
     private_dns_zone_ids = [azurerm_private_dns_zone.cosmos.id]
   }
 
-  depends_on = [azurerm_private_dns_zone_virtual_network_link.cosmos]
+  depends_on = [
+    azurerm_private_dns_zone_virtual_network_link.cosmos,
+    azurerm_private_endpoint.blob
+  ]
 }
 
 ## AI Search
@@ -196,7 +172,10 @@ resource "azurerm_private_endpoint" "search" {
     private_dns_zone_ids = [azurerm_private_dns_zone.search.id]
   }
 
-  depends_on = [azurerm_private_dns_zone_virtual_network_link.search]
+  depends_on = [
+    azurerm_private_dns_zone_virtual_network_link.search,
+    azurerm_private_endpoint.cosmos
+  ]
 }
 
 ## Key Vault
@@ -219,7 +198,10 @@ resource "azurerm_private_endpoint" "keyvault" {
     private_dns_zone_ids = [azurerm_private_dns_zone.keyvault.id]
   }
 
-  depends_on = [azurerm_private_dns_zone_virtual_network_link.keyvault]
+  depends_on = [
+    azurerm_private_dns_zone_virtual_network_link.keyvault,
+    azurerm_private_endpoint.search
+  ]
 }
 
 ## ACR
@@ -245,29 +227,6 @@ resource "azurerm_private_endpoint" "acr" {
   depends_on = [azurerm_private_dns_zone_virtual_network_link.acr]
 }
 
-## Azure OpenAI
-resource "azurerm_private_endpoint" "openai" {
-  name                = "pe-openai-${var.env}"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  subnet_id           = var.database_subnet_ids[1]
-  tags                = var.tags
-
-  private_service_connection {
-    name                           = "psc-openai-${var.env}"
-    private_connection_resource_id = var.openai_id
-    subresource_names              = ["account"]
-    is_manual_connection           = false
-  }
-
-  private_dns_zone_group {
-    name                 = "dns-group-openai-${var.env}"
-    private_dns_zone_ids = [azurerm_private_dns_zone.openai.id]
-  }
-
-  depends_on = [azurerm_private_dns_zone_virtual_network_link.openai]
-}
-
 ## Azure ML Workspace
 resource "azurerm_private_endpoint" "azureml" {
   name                = "pe-azureml-${var.env}"
@@ -288,28 +247,9 @@ resource "azurerm_private_endpoint" "azureml" {
     private_dns_zone_ids = [azurerm_private_dns_zone.azureml.id]
   }
 
-  depends_on = [azurerm_private_dns_zone_virtual_network_link.azureml]
+  depends_on = [
+    azurerm_private_dns_zone_virtual_network_link.azureml,
+    azurerm_private_endpoint.acr
+  ]
 }
 
-## Log Analytics (Monitor)
-resource "azurerm_private_endpoint" "monitor" {
-  name                = "pe-monitor-${var.env}"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  subnet_id           = var.database_subnet_ids[1]
-  tags                = var.tags
-
-  private_service_connection {
-    name                           = "psc-monitor-${var.env}"
-    private_connection_resource_id = var.log_analytics_id
-    subresource_names              = ["azuremonitor"]
-    is_manual_connection           = false
-  }
-
-  private_dns_zone_group {
-    name                 = "dns-group-monitor-${var.env}"
-    private_dns_zone_ids = [azurerm_private_dns_zone.monitor.id]
-  }
-
-  depends_on = [azurerm_private_dns_zone_virtual_network_link.monitor]
-}

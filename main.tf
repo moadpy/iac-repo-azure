@@ -133,19 +133,21 @@ module "ai_search" {
 
 # ─────────────────────────────────────────
 # Azure OpenAI
+# Commented out: sandbox blocks CognitiveServices deployments and flags
+# too many Cognitive Services accounts. Deploy manually via Azure OpenAI Studio.
 # ─────────────────────────────────────────
-module "azure_openai" {
-  source = "./modules/azure_openai"
-
-  resource_group_name              = data.azurerm_resource_group.main.name
-  location                         = var.location
-  env                              = var.env
-  openai_gpt_model                 = var.openai_gpt_model
-  openai_embedding_model           = var.openai_embedding_model
-  openai_gpt_capacity_tpu          = var.openai_gpt_capacity_tpu
-  openai_embedding_capacity_tpu    = var.openai_embedding_capacity_tpu
-  tags                             = local.common_tags
-}
+# module "azure_openai" {
+#   source = "./modules/azure_openai"
+#
+#   resource_group_name              = data.azurerm_resource_group.main.name
+#   location                         = var.location
+#   env                              = var.env
+#   openai_gpt_model                 = var.openai_gpt_model
+#   openai_embedding_model           = var.openai_embedding_model
+#   openai_gpt_capacity_tpu          = var.openai_gpt_capacity_tpu
+#   openai_embedding_capacity_tpu    = var.openai_embedding_capacity_tpu
+#   tags                             = local.common_tags
+# }
 
 # ─────────────────────────────────────────
 # Azure ML Workspace
@@ -199,20 +201,6 @@ module "application_gateway" {
 }
 
 # ─────────────────────────────────────────
-# Azure Functions (RAG ingestion)
-# ─────────────────────────────────────────
-module "azure_functions" {
-  source = "./modules/azure_functions"
-
-  resource_group_name        = data.azurerm_resource_group.main.name
-  location                   = var.location
-  env                        = var.env
-  storage_account_id         = module.storage.ml_storage_account_id
-  log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
-  tags                       = local.common_tags
-}
-
-# ─────────────────────────────────────────
 # Front Door (CDN + WAF)
 # ─────────────────────────────────────────
 module "front_door" {
@@ -242,8 +230,7 @@ module "private_endpoints" {
   ai_search_id         = module.ai_search.ai_search_id
   key_vault_id         = module.key_vault.key_vault_id
   acr_id               = module.acr.acr_id
-  openai_id            = module.azure_openai.openai_id
+  # openai_id          = module.azure_openai.openai_id  # OpenAI module disabled
   azureml_id           = module.azure_ml.azure_ml_workspace_id
-  log_analytics_id     = module.monitoring.log_analytics_workspace_id
   tags                 = local.common_tags
 }

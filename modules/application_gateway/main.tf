@@ -118,6 +118,13 @@ resource "azurerm_application_gateway" "main" {
     priority           = 10
   }
 
+  # ── SSL Policy (required — default AppGwSslPolicy20150501 is deprecated) ──
+
+  ssl_policy {
+    policy_type = "Predefined"
+    policy_name = "AppGwSslPolicy20220101S"
+  }
+
   # ── WAF Configuration ─────────────────────────────────────────────────────
 
   waf_configuration {

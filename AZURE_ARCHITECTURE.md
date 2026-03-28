@@ -129,7 +129,7 @@ ml-repo/procedures/
 | **Container registry** | ECR | Azure Container Registry (ACR) | Premium SKU for Private Endpoint |
 | **NoSQL / Session store** | DynamoDB | Azure Cosmos DB (NoSQL API) | Serverless mode for sandboxes |
 | **Vector search** | OpenSearch (k-NN) | Azure AI Search (vector search) | HNSW algorithm + semantic ranking |
-| **Serverless ingestion** | Lambda (VPC) | Azure Functions (Premium Plan, VNet-integrated) | Event Grid trigger on blob upload |
+| **Serverless ingestion** | Lambda (VPC) | CI/CD Pipeline / AKS Job | *Sandbox Constraint*: Azure Functions quota is 0. Moved to CI/CD or K8s Job. |
 | **Secrets** | Secrets Manager | Azure Key Vault | Managed Identity access — no passwords |
 | **ML Training** | SageMaker Training Jobs | Azure Machine Learning (Training Jobs) | **RESTORED** — core MLOps component |
 | **ML Inference endpoint** | SageMaker Managed Endpoint | Azure ML Online Endpoint | Hosts trained failure classifier |
@@ -185,9 +185,9 @@ ml-repo/procedures/
 │  ┌─────────────────────────────┬──────────────────────────────────┐    │
 │  │  AZ1: 10.x.200.0/24         │  AZ2: 10.x.201.0/24             │    │
 │  │  [PE: Cosmos DB]             │  [PE: Azure AI Search]           │    │
-│  │  [PE: Blob Storage]          │  [PE: Azure OpenAI]              │    │
-│  │  [PE: Key Vault]             │  [PE: ACR]                       │    │
-│  │  [PE: Azure ML]              │  [PE: Azure Monitor]             │    │
+│  │  [PE: Blob Storage]          │  [PE: ACR]                       │    │
+│  │  [PE: Key Vault]             │  [PE: Azure Monitor]             │    │
+│  │  [PE: Azure ML]              │                                  │    │
 │  └─────────────────────────────┴──────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -201,7 +201,6 @@ ml-repo/procedures/
 | Azure AI Search | `privatelink.search.windows.net` |
 | Azure Key Vault | `privatelink.vaultcore.azure.net` |
 | Azure Container Registry | `privatelink.azurecr.io` |
-| Azure OpenAI Service | `privatelink.openai.azure.com` |
 | Azure ML Workspace | `privatelink.api.azureml.ms` |
 | Azure Monitor / Log Analytics | `privatelink.monitor.azure.com` |
 
@@ -293,8 +292,9 @@ Step 2: Merge to develop  [blob_sync.yml]
    └── az storage blob sync  procedures/ → ml-data container/procedures/
          └── New/updated blobs emit Azure Event Grid events
 
-Step 3: Event Grid triggers Azure Function  (VNet-integrated, private subnet)
-   ├── Read new .md blob from Blob Storage (via Private Endpoint)
+Step 3: CI/CD Pipeline Job or AKS CronJob
+   ├── *Architecture Note: Pluralsight sandboxes block serverless Azure Functions creation (0 quota). The Event Grid trigger was replaced by a CI/CD job.*
+   ├── Read new .md blob from Blob Storage
    └── For each file:
          ├── Parse Markdown → extract plain text
          ├── Chunk: 512-token segments, 50-token overlap (LangChain RecursiveCharacterTextSplitter)
@@ -361,7 +361,7 @@ Full end-to-end request: from maintenance engineer browser to AI-generated repai
 │      │                                                                         │
 │      ├── Step 5: Query Augmentation + Embedding                                │
 │      │      ├── Concatenate: question + sensor readings + predicted_failure    │
-│      │      └── Azure OpenAI (text-embedding-3-small) via Private Endpoint     │
+│      │      └── Azure OpenAI (text-embedding-3-small) via Public Internet (NAT Gateway)│
 │      │            Output: float[1536] query vector                             │
 │      │                                                                         │
 │      ├── Step 6: RAG — Procedure Retrieval                                     │
@@ -378,7 +378,7 @@ Full end-to-end request: from maintenance engineer browser to AI-generated repai
 │      │      │     [machine telemetry: sensor readings]                          │
 │      │      │     [ML prediction: failure type + confidence + probabilities]    │
 │      │      │     [engineer question]                                           │
-│      │      └── Azure OpenAI (GPT-4o) via Private Endpoint                     │
+│      │      └── Azure OpenAI (GPT-4o) via Public Internet (NAT Gateway)        │
 │      │            → generates step-by-step repair guide                         │
 │      │                                                                         │
 │      └── Step 8: Persist + Return                                              │
@@ -516,7 +516,7 @@ iac-repo/
 │   ├── acr/                      # Azure Container Registry (Premium for PE)
 │   ├── cosmos_db/                # Cosmos DB NoSQL serverless (session history)
 │   ├── ai_search/                # Azure AI Search Standard S1 (vector index)
-│   ├── azure_functions/          # Azure Functions Premium EP1 (RAG ingestion)
+│   ├── azure_functions/          # (Disabled) Sandbox has 0 quota for Azure Functions.
 │   ├── key_vault/                # Azure Key Vault (secrets, endpoint URLs)
 │   ├── azure_ml/                 # Azure ML Workspace + Compute Cluster + Online Endpoint
 │   ├── azure_openai/             # Azure OpenAI: gpt-4o + text-embedding-3-small
@@ -649,7 +649,7 @@ With a 4-hour session: ~15 min provisioning, ~45 min first ML training job, leav
 │                    │                                                      │   │
 │                    │  DATABASE TIER (Private Endpoints)                   │   │
 │                    │  Cosmos DB │ AI Search │ Blob Storage                │   │
-│                    │  Key Vault │ Azure OpenAI │ Azure ML │ ACR           │   │
+│                    │  Key Vault │ Azure ML │ ACR                        │   │
 │                    └──────────────────────────────────────────────────────┘  │
 │                                                                               │
 │  MLOPS (Azure Machine Learning)                                               │

@@ -48,18 +48,8 @@ variable "acr_id" {
   type        = string
 }
 
-variable "openai_id" {
-  description = "Resource ID of the Azure OpenAI cognitive account"
-  type        = string
-}
-
 variable "azureml_id" {
   description = "Resource ID of the Azure ML workspace"
-  type        = string
-}
-
-variable "log_analytics_id" {
-  description = "Resource ID of the Log Analytics workspace"
   type        = string
 }
 

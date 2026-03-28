@@ -6,8 +6,6 @@ output "private_dns_zone_ids" {
     search   = azurerm_private_dns_zone.search.id
     keyvault = azurerm_private_dns_zone.keyvault.id
     acr      = azurerm_private_dns_zone.acr.id
-    openai   = azurerm_private_dns_zone.openai.id
-    azureml  = azurerm_private_dns_zone.azureml.id
-    monitor  = azurerm_private_dns_zone.monitor.id
+azureml  = azurerm_private_dns_zone.azureml.id
   }
 }

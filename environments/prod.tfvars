@@ -1,8 +1,7 @@
 env      = "prod"
-location = "westeurope"
+location = "eastus"
 
 # Sandbox: set this to the resource group name shown in your Pluralsight portal
-resource_group_name = "your-sandbox-resource-group"
 
 vnet_cidr             = "10.1.0.0/16"
 public_subnet_cidrs   = ["10.1.100.0/24", "10.1.101.0/24"]

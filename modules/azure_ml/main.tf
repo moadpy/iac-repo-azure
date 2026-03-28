@@ -16,7 +16,7 @@ resource "azurerm_application_insights" "ml" {
 # ─────────────────────────────────────────────────────────────────────────────
 
 resource "azurerm_machine_learning_workspace" "main" {
-  name                          = "mlw-predictive-maintenance-${var.env}"
+  name                          = "mlw-predmaint-${var.env}"
   location                      = var.location
   resource_group_name           = var.resource_group_name
   application_insights_id       = azurerm_application_insights.ml.id

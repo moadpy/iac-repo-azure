@@ -8,8 +8,16 @@ data "azurerm_client_config" "current" {}
 # Azure Key Vault
 # ─────────────────────────────────────────────────────────────────────────────
 
+resource "random_string" "kv_suffix" {
+  length  = 3
+  special = false
+  upper   = false
+}
+
 resource "azurerm_key_vault" "main" {
-  name                          = "kv-predmaint-${var.env}"
+  # Suffix with random string — KV names are globally unique and
+  # soft-deleted vaults block reuse across Pluralsight sandbox resets.
+  name                          = "kv-predmaint-${var.env}-${random_string.kv_suffix.result}"
   location                      = var.location
   resource_group_name           = var.resource_group_name
   tenant_id                     = data.azurerm_client_config.current.tenant_id
@@ -19,18 +27,22 @@ resource "azurerm_key_vault" "main" {
   # Sandbox: must be true so the GitHub Actions runner can write secrets during apply.
   # Private endpoint still provides restricted in-VNet access.
   public_network_access_enabled = true
-  enable_rbac_authorization     = true
+  # Sandbox: roleAssignments/write is blocked — use vault access policies instead of RBAC.
+  enable_rbac_authorization     = false
   tags                          = var.tags
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Grant the CI/CD Service Principal Key Vault Administrator (for bootstrapping)
+# Access Policy — grant the deploying SP full secret permissions
+# Uses Microsoft.KeyVault/vaults/accessPolicies/write (allowed with Contributor)
 # ─────────────────────────────────────────────────────────────────────────────
 
-resource "azurerm_role_assignment" "kv_admin" {
-  scope                = azurerm_key_vault.main.id
-  role_definition_name = "Key Vault Administrator"
-  principal_id         = data.azurerm_client_config.current.object_id
+resource "azurerm_key_vault_access_policy" "deployer" {
+  key_vault_id = azurerm_key_vault.main.id
+  tenant_id    = data.azurerm_client_config.current.tenant_id
+  object_id    = data.azurerm_client_config.current.object_id
+
+  secret_permissions = ["Get", "List", "Set", "Delete", "Purge", "Recover"]
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -41,14 +53,14 @@ resource "azurerm_key_vault_secret" "cosmos_primary_key" {
   name         = "cosmos-primary-key"
   value        = var.cosmos_db_primary_key
   key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_role_assignment.kv_admin]
+  depends_on   = [azurerm_key_vault_access_policy.deployer]
 }
 
 resource "azurerm_key_vault_secret" "ml_storage_primary_key" {
   name         = "ml-storage-primary-key"
   value        = var.ml_storage_primary_key
   key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_role_assignment.kv_admin]
+  depends_on   = [azurerm_key_vault_access_policy.deployer]
 }
 
 # Placeholder — populated by the CI/CD pipeline after Azure ML endpoint deployment
@@ -56,7 +68,7 @@ resource "azurerm_key_vault_secret" "ml_endpoint_url" {
   name         = "ml-endpoint-url"
   value        = "placeholder"
   key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_role_assignment.kv_admin]
+  depends_on   = [azurerm_key_vault_access_policy.deployer]
 
   lifecycle {
     ignore_changes = [value]
