@@ -1,14 +1,20 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# Cosmos DB Account (NoSQL, Serverless)
-# ─────────────────────────────────────────────────────────────────────────────
+# ===========================================================================
+# Module: cosmos_db
+# Source: app-terraform — Cosmos DB (Serverless) + Database + Container
+# ===========================================================================
 
 resource "azurerm_cosmosdb_account" "main" {
-  name                          = "cosmos-predmaint-${var.env}"
-  location                      = var.location
-  resource_group_name           = var.resource_group_name
-  offer_type                    = "Standard"
-  kind                          = "GlobalDocumentDB"
-  public_network_access_enabled = false
+  name                = "cosmos-rca-${var.suffix}"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  offer_type          = "Standard"
+  kind                = "GlobalDocumentDB" # NoSQL API
+  tags                = var.tags
+
+  # Serverless — no provisioned throughput, no hourly minimum cost
+  capabilities {
+    name = "EnableServerless"
+  }
 
   consistency_policy {
     consistency_level = "Session"
@@ -19,40 +25,29 @@ resource "azurerm_cosmosdb_account" "main" {
     failover_priority = 0
   }
 
-  tags = var.tags
+  # Public access is fine for dev — Private Endpoint in prod
+  public_network_access_enabled     = var.public_network_access
+  is_virtual_network_filter_enabled = false
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Database
-# ─────────────────────────────────────────────────────────────────────────────
-
-resource "azurerm_cosmosdb_sql_database" "maintenance" {
-  name                = "maintenance"
+resource "azurerm_cosmosdb_sql_database" "main" {
+  name                = var.database_name
   resource_group_name = var.resource_group_name
   account_name        = azurerm_cosmosdb_account.main.name
-  throughput          = 400
+  # No throughput setting on serverless accounts
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Container — session history
-# ─────────────────────────────────────────────────────────────────────────────
-
-resource "azurerm_cosmosdb_sql_container" "sessions" {
-  name                = "sessions"
+resource "azurerm_cosmosdb_sql_container" "incidents" {
+  name                = var.container_name
   resource_group_name = var.resource_group_name
   account_name        = azurerm_cosmosdb_account.main.name
-  database_name       = azurerm_cosmosdb_sql_database.maintenance.name
-  partition_key_paths = ["/session_id"]
+  database_name       = azurerm_cosmosdb_sql_database.main.name
+  partition_key_paths = [var.partition_key_path]
 
   indexing_policy {
     indexing_mode = "consistent"
 
-    included_path {
-      path = "/*"
-    }
-
-    excluded_path {
-      path = "/\"_etag\"/?"
-    }
+    included_path { path = "/*" }
+    excluded_path { path = "/\"_etag\"/?" }
   }
 }

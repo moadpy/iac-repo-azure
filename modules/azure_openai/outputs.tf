@@ -1,5 +1,5 @@
 output "openai_id" {
-  description = "Resource ID of the Azure OpenAI account"
+  description = "ID of the Azure OpenAI Cognitive Account"
   value       = azurerm_cognitive_account.openai.id
 }
 
@@ -8,7 +8,12 @@ output "openai_endpoint" {
   value       = azurerm_cognitive_account.openai.endpoint
 }
 
-output "openai_name" {
-  description = "Name of the Azure OpenAI account"
-  value       = azurerm_cognitive_account.openai.name
+output "chat_deployment_name" {
+  description = "Name of the chat model deployment"
+  value       = azurerm_cognitive_deployment.chat.name
+}
+
+output "embedding_deployment_name" {
+  description = "Name of the embedding model deployment"
+  value       = azurerm_cognitive_deployment.embedding.name
 }

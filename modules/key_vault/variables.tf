@@ -8,21 +8,19 @@ variable "location" {
   type        = string
 }
 
-variable "env" {
-  description = "Environment name (preprod or prod)"
+variable "suffix" {
+  description = "Random suffix for globally unique names"
   type        = string
 }
 
-variable "cosmos_db_primary_key" {
-  description = "Primary key of the Cosmos DB account"
+variable "tenant_id" {
+  description = "Azure AD tenant ID"
   type        = string
-  sensitive   = true
 }
 
-variable "ml_storage_primary_key" {
-  description = "Primary access key of the ML data storage account"
+variable "caller_object_id" {
+  description = "Object ID of the Terraform caller (for Key Vault access policy)"
   type        = string
-  sensitive   = true
 }
 
 variable "tags" {

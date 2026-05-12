@@ -3,10 +3,9 @@ location = "eastus"
 
 # Sandbox: set this to the resource group name shown in your Pluralsight portal
 
-vnet_cidr             = "10.1.0.0/16"
-public_subnet_cidrs   = ["10.1.100.0/24", "10.1.101.0/24"]
-private_subnet_cidrs  = ["10.1.0.0/24", "10.1.1.0/24"]
-database_subnet_cidrs = ["10.1.200.0/24", "10.1.201.0/24"]
+vnet_cidr            = "10.1.0.0/16"
+private_subnet_cidr  = "10.1.0.0/23"
+database_subnet_cidr = "10.1.200.0/24"
 
 # Standard_DS2_v2 = 2 CPUs. Max 3 nodes × 2 CPUs = 6 CPUs.
 # (Sandbox: max 10 CPUs total, max 3 nodes per AKS cluster)

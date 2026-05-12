@@ -1,14 +1,14 @@
-output "ai_search_id" {
-  description = "Resource ID of the AI Search service"
+output "search_service_id" {
+  description = "ID of the Azure AI Search service"
   value       = azurerm_search_service.main.id
 }
 
-output "ai_search_name" {
-  description = "Name of the AI Search service"
+output "search_service_name" {
+  description = "Name of the Azure AI Search service"
   value       = azurerm_search_service.main.name
 }
 
-output "ai_search_endpoint" {
-  description = "Endpoint URL of the AI Search service"
+output "search_endpoint" {
+  description = "Endpoint URL of the Azure AI Search service"
   value       = "https://${azurerm_search_service.main.name}.search.windows.net"
 }

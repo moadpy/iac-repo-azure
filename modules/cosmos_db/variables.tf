@@ -8,9 +8,33 @@ variable "location" {
   type        = string
 }
 
-variable "env" {
-  description = "Environment name (preprod or prod)"
+variable "suffix" {
+  description = "Random suffix for globally unique names"
   type        = string
+}
+
+variable "database_name" {
+  description = "Name of the Cosmos DB SQL database"
+  type        = string
+  default     = "rca_engine_db"
+}
+
+variable "container_name" {
+  description = "Name of the Cosmos DB SQL container"
+  type        = string
+  default     = "incidents"
+}
+
+variable "partition_key_path" {
+  description = "Partition key path for the container"
+  type        = string
+  default     = "/incident_id"
+}
+
+variable "public_network_access" {
+  description = "Whether public network access is enabled"
+  type        = bool
+  default     = true
 }
 
 variable "tags" {

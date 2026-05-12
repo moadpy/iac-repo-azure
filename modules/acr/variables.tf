@@ -8,9 +8,15 @@ variable "location" {
   type        = string
 }
 
-variable "env" {
-  description = "Environment name (preprod or prod)"
+variable "suffix" {
+  description = "Random suffix for globally unique names"
   type        = string
+}
+
+variable "sku" {
+  description = "SKU for the Container Registry (Standard for dev, Premium for Private Endpoint)"
+  type        = string
+  default     = "Standard"
 }
 
 variable "tags" {

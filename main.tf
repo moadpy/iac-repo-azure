@@ -1,19 +1,40 @@
+# ===========================================================================
+# Root main.tf — Modular IaC for RCA Engine / Predictive Maintenance Platform
+#
+# Consolidates resources from three separate Terraform stacks:
+#   - terraform-ml:    ML Workspace, Storage, Key Vault, ACR, Monitoring
+#   - app-terraform:   Azure OpenAI, AI Search, Cosmos DB, Identity/RBAC
+#   - dev-vm-infra:    Dev VM with networking for backend development
+#
+# Module dependency graph:
+#   monitoring  ─┐
+#   storage     ─┤
+#   key_vault   ─┼──► azure_ml
+#   acr         ─┘
+#   azure_openai ─┐
+#   ai_search    ─┼──► identity (RBAC)
+#   cosmos_db    ─┘
+#   dev_vm       ──── (independent)
+# ===========================================================================
+
 terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "~> 3.100"
     }
+    azuread = {
+      source  = "hashicorp/azuread"
+      version = "~> 2.47"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
-
-  backend "azurerm" {}
 }
 
 provider "azurerm" {
-  # Sandbox SP has no permission to register resource providers at subscription
-  # scope — skip automatic registration (works on all azurerm 3.x versions).
-  skip_provider_registration = true
-
   features {
     key_vault {
       purge_soft_delete_on_destroy = true
@@ -21,216 +42,217 @@ provider "azurerm" {
   }
 }
 
-locals {
-  common_tags = merge(
-    {
-      environment = var.env
-      project     = "predictive-maintenance"
-      managed_by  = "terraform"
-    },
-    var.tags
-  )
+# ---------------------------------------------------------------------------
+# Shared data sources and random suffix
+# ---------------------------------------------------------------------------
+data "azurerm_client_config" "current" {}
+
+resource "random_string" "suffix" {
+  length  = 6
+  upper   = false
+  special = false
 }
 
-# Sandbox: the SP cannot create resource groups — reference the pre-existing one.
-data "azurerm_resource_group" "main" {
-  name = var.resource_group_name
+locals {
+  suffix = random_string.suffix.result
+  tags = {
+    environment = var.environment
+    project     = "predictive-maintenance"
+    managed_by  = "terraform"
+  }
+}
+
+# Create the resource group
+resource "azurerm_resource_group" "main" {
+  name     = var.resource_group_name
+  location = var.location
+  tags     = local.tags
 }
 
 # ─────────────────────────────────────────
-# Monitoring (must be first — other modules depend on workspace_id)
+# 1. Monitoring (Log Analytics + App Insights)
+#    Must be first — Azure ML depends on Application Insights
 # ─────────────────────────────────────────
 module "monitoring" {
   source = "./modules/monitoring"
 
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = azurerm_resource_group.main.name
   location            = var.location
-  env                 = var.env
-  tags                = local.common_tags
+  suffix              = local.suffix
+  tags                = local.tags
 }
 
 # ─────────────────────────────────────────
-# ACR (needed by AKS)
-# ─────────────────────────────────────────
-module "acr" {
-  source = "./modules/acr"
-
-  resource_group_name = data.azurerm_resource_group.main.name
-  location            = var.location
-  env                 = var.env
-  tags                = local.common_tags
-}
-
-# ─────────────────────────────────────────
-# Storage (ML data + frontend static site)
+# 2. Storage (ML data + blob containers)
 # ─────────────────────────────────────────
 module "storage" {
   source = "./modules/storage"
 
-  resource_group_name = data.azurerm_resource_group.main.name
-  location            = var.location
-  env                 = var.env
-  tags                = local.common_tags
+  resource_group_name    = azurerm_resource_group.main.name
+  location               = var.location
+  suffix                 = local.suffix
+  storage_container_name = var.storage_container_name
+  tags                   = local.tags
 }
 
 # ─────────────────────────────────────────
-# Cosmos DB
-# ─────────────────────────────────────────
-module "cosmos_db" {
-  source = "./modules/cosmos_db"
-
-  resource_group_name = data.azurerm_resource_group.main.name
-  location            = var.location
-  env                 = var.env
-  tags                = local.common_tags
-}
-
-# ─────────────────────────────────────────
-# VNet (subnets, NSGs, NAT Gateways)
-# ─────────────────────────────────────────
-module "vnet" {
-  source = "./modules/vnet"
-
-  resource_group_name   = data.azurerm_resource_group.main.name
-  location              = var.location
-  env                   = var.env
-  vnet_cidr             = var.vnet_cidr
-  public_subnet_cidrs   = var.public_subnet_cidrs
-  private_subnet_cidrs  = var.private_subnet_cidrs
-  database_subnet_cidrs = var.database_subnet_cidrs
-  tags                  = local.common_tags
-}
-
-# ─────────────────────────────────────────
-# Key Vault (depends on Cosmos + Storage for secrets)
+# 3. Key Vault (required by Azure ML)
 # ─────────────────────────────────────────
 module "key_vault" {
   source = "./modules/key_vault"
 
-  resource_group_name   = data.azurerm_resource_group.main.name
-  location              = var.location
-  env                   = var.env
-  cosmos_db_primary_key = module.cosmos_db.cosmos_db_primary_key
-  ml_storage_primary_key = module.storage.ml_storage_account_primary_key
-  tags                  = local.common_tags
-}
-
-# ─────────────────────────────────────────
-# AI Search
-# ─────────────────────────────────────────
-module "ai_search" {
-  source = "./modules/ai_search"
-
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = azurerm_resource_group.main.name
   location            = var.location
-  env                 = var.env
-  search_sku          = var.search_sku
-  aks_principal_id    = module.aks.aks_identity_principal_id
-  tags                = local.common_tags
-
-  depends_on = [module.aks]
+  suffix              = local.suffix
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+  caller_object_id    = data.azurerm_client_config.current.object_id
+  tags                = local.tags
 }
 
 # ─────────────────────────────────────────
-# Azure OpenAI
-# Commented out: sandbox blocks CognitiveServices deployments and flags
-# too many Cognitive Services accounts. Deploy manually via Azure OpenAI Studio.
+# 4. Container Registry (ACR — stores Docker images for ML envs)
 # ─────────────────────────────────────────
-# module "azure_openai" {
-#   source = "./modules/azure_openai"
-#
-#   resource_group_name              = data.azurerm_resource_group.main.name
-#   location                         = var.location
-#   env                              = var.env
-#   openai_gpt_model                 = var.openai_gpt_model
-#   openai_embedding_model           = var.openai_embedding_model
-#   openai_gpt_capacity_tpu          = var.openai_gpt_capacity_tpu
-#   openai_embedding_capacity_tpu    = var.openai_embedding_capacity_tpu
-#   tags                             = local.common_tags
-# }
+module "acr" {
+  source = "./modules/acr"
+
+  resource_group_name = azurerm_resource_group.main.name
+  location            = var.location
+  suffix              = local.suffix
+  tags                = local.tags
+}
 
 # ─────────────────────────────────────────
-# Azure ML Workspace
+# 5. Azure ML Workspace
+#    Depends on: monitoring, storage, key_vault, acr
 # ─────────────────────────────────────────
 module "azure_ml" {
   source = "./modules/azure_ml"
 
-  resource_group_name        = data.azurerm_resource_group.main.name
-  location                   = var.location
-  env                        = var.env
-  key_vault_id               = module.key_vault.key_vault_id
-  storage_account_id         = module.storage.ml_storage_account_id
-  acr_id                     = module.acr.acr_id
-  log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
-  private_subnet_id          = module.vnet.private_subnet_ids[0]
-  ml_compute_vm_size         = var.ml_compute_vm_size
-  ml_compute_max_nodes       = var.ml_compute_max_nodes
-  tags                       = local.common_tags
+  resource_group_name     = azurerm_resource_group.main.name
+  location                = var.location
+  workspace_name          = var.ml_workspace_name
+  application_insights_id = module.monitoring.application_insights_id
+  key_vault_id            = module.key_vault.key_vault_id
+  storage_account_id      = module.storage.storage_account_id
+  container_registry_id   = module.acr.acr_id
+  tags                    = local.tags
+
+  depends_on = [module.key_vault]
 }
 
 # ─────────────────────────────────────────
-# AKS (depends on VNet, ACR, Monitoring)
+# 6. Azure OpenAI (GPT + Embeddings)
 # ─────────────────────────────────────────
-module "aks" {
-  source = "./modules/aks"
+module "azure_openai" {
+  source = "./modules/azure_openai"
 
-  resource_group_name        = data.azurerm_resource_group.main.name
-  location                   = var.location
-  env                        = var.env
-  private_subnet_ids         = module.vnet.private_subnet_ids
-  acr_id                     = module.acr.acr_id
-  log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
-  vnet_id                    = module.vnet.vnet_id
-  node_vm_size               = var.aks_node_vm_size
-  node_count_min             = var.aks_node_count_min
-  node_count_max             = var.aks_node_count_max
-  tags                       = local.common_tags
+  resource_group_name     = azurerm_resource_group.main.name
+  openai_location         = var.openai_location
+  suffix                  = local.suffix
+  chat_model_name         = var.chat_model_name
+  chat_model_version      = var.chat_model_version
+  chat_sku_name           = var.chat_sku_name
+  chat_sku_capacity       = var.chat_sku_capacity
+  embedding_model_name    = var.embedding_model_name
+  embedding_model_version = var.embedding_model_version
+  embedding_sku_name      = var.embedding_sku_name
+  embedding_sku_capacity  = var.embedding_sku_capacity
+  tags                    = local.tags
 }
 
 # ─────────────────────────────────────────
-# Application Gateway (WAF v2)
+# 7. Azure AI Search
 # ─────────────────────────────────────────
-module "application_gateway" {
-  source = "./modules/application_gateway"
+module "ai_search" {
+  source = "./modules/ai_search"
 
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = azurerm_resource_group.main.name
   location            = var.location
-  env                 = var.env
-  appgw_subnet_id     = module.vnet.appgw_subnet_id
-  tags                = local.common_tags
+  suffix              = local.suffix
+  search_sku          = var.search_sku
+  tags                = local.tags
 }
 
 # ─────────────────────────────────────────
-# Front Door (CDN + WAF)
+# 8. Cosmos DB (Serverless — incidents store)
 # ─────────────────────────────────────────
-module "front_door" {
-  source = "./modules/front_door"
+module "cosmos_db" {
+  source = "./modules/cosmos_db"
 
-  resource_group_name  = data.azurerm_resource_group.main.name
-  location             = var.location
-  env                  = var.env
-  frontend_web_endpoint = module.storage.frontend_web_endpoint
-  appgw_public_ip      = module.application_gateway.appgw_public_ip_address
-  tags                 = local.common_tags
+  resource_group_name = azurerm_resource_group.main.name
+  location            = var.location
+  suffix              = local.suffix
+  tags                = local.tags
 }
 
 # ─────────────────────────────────────────
-# Private Endpoints (depends on all PaaS services and VNet)
+# 9. Azure Functions (Knowledge Base Ingestion)
 # ─────────────────────────────────────────
-module "private_endpoints" {
-  source = "./modules/private_endpoints"
+module "functions" {
+  source = "./modules/functions"
 
-  resource_group_name  = data.azurerm_resource_group.main.name
-  location             = var.location
-  env                  = var.env
-  vnet_id              = module.vnet.vnet_id
-  database_subnet_ids  = module.vnet.database_subnet_ids
-  storage_account_id   = module.storage.ml_storage_account_id
-  cosmos_db_id         = module.cosmos_db.cosmos_db_id
-  ai_search_id         = module.ai_search.ai_search_id
-  key_vault_id         = module.key_vault.key_vault_id
-  acr_id               = module.acr.acr_id
-  # openai_id          = module.azure_openai.openai_id  # OpenAI module disabled
-  azureml_id           = module.azure_ml.azure_ml_workspace_id
-  tags                 = local.common_tags
+  resource_group_name = azurerm_resource_group.main.name
+  location            = var.location
+  suffix              = local.suffix
+  tags                = local.tags
+
+  # Azure OpenAI — endpoints only, auth via Managed Identity
+  openai_endpoint             = module.azure_openai.openai_endpoint
+  openai_embedding_deployment = module.azure_openai.embedding_deployment_name
+
+  # Azure AI Search — endpoint only, auth via Managed Identity
+  search_endpoint   = module.ai_search.search_endpoint
+  search_index_name = var.search_index_name
+
+  # Monitoring — Application Insights
+  appinsights_connection_string = module.monitoring.application_insights_connection_string
+
+  # GitHub integration
+  github_webhook_secret = var.github_webhook_secret
+  github_token          = var.github_token
+
+  # Blob trigger — ML storage account (where runbooks are uploaded)
+  runbooks_storage_connection_string = module.storage.storage_account_connection_string
+
+  depends_on = [module.azure_openai, module.ai_search, module.monitoring, module.storage]
+}
+
+# ─────────────────────────────────────────
+# 10. Identity & RBAC
+#    Creates Service Principals + assigns roles to all services
+#    Depends on: azure_openai, ai_search, cosmos_db, storage
+# ─────────────────────────────────────────
+module "identity" {
+  source = "./modules/identity"
+
+  resource_group_name       = azurerm_resource_group.main.name
+  resource_group_id         = azurerm_resource_group.main.id
+  suffix                    = local.suffix
+  environment               = var.environment
+  caller_object_id          = data.azurerm_client_config.current.object_id
+  openai_account_id         = module.azure_openai.openai_id
+  search_service_id         = module.ai_search.search_service_id
+  cosmosdb_account_id       = module.cosmos_db.cosmosdb_account_id
+  cosmosdb_account_name     = module.cosmos_db.cosmosdb_account_name
+  storage_account_id        = module.storage.storage_account_id
+  function_app_principal_id = module.functions.function_app_principal_id
+
+  depends_on = [module.azure_openai, module.ai_search, module.cosmos_db, module.storage, module.functions]
+}
+
+# ─────────────────────────────────────────
+# 10. Dev VM (backend development environment)
+#     Independent — can be disabled by setting deploy_dev_vm = false
+# ─────────────────────────────────────────
+module "dev_vm" {
+  source = "./modules/dev_vm"
+  count  = var.deploy_dev_vm ? 1 : 0
+
+  resource_group_name = azurerm_resource_group.main.name
+  location            = var.location
+  suffix              = local.suffix
+  vm_size             = var.dev_vm_size
+  admin_username      = var.dev_vm_admin_username
+  ssh_public_key_path = var.dev_vm_ssh_public_key_path
+  tags                = local.tags
 }

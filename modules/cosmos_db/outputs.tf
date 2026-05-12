@@ -1,20 +1,24 @@
-output "cosmos_db_id" {
-  description = "Resource ID of the Cosmos DB account"
+output "cosmosdb_account_id" {
+  description = "ID of the Cosmos DB account"
   value       = azurerm_cosmosdb_account.main.id
 }
 
-output "cosmos_db_endpoint" {
-  description = "Endpoint URI of the Cosmos DB account"
+output "cosmosdb_account_name" {
+  description = "Name of the Cosmos DB account"
+  value       = azurerm_cosmosdb_account.main.name
+}
+
+output "cosmosdb_endpoint" {
+  description = "Endpoint URL of the Cosmos DB account"
   value       = azurerm_cosmosdb_account.main.endpoint
 }
 
-output "cosmos_db_primary_key" {
-  description = "Primary key of the Cosmos DB account"
-  value       = azurerm_cosmosdb_account.main.primary_key
-  sensitive   = true
+output "cosmosdb_database_name" {
+  description = "Name of the Cosmos DB SQL database"
+  value       = azurerm_cosmosdb_sql_database.main.name
 }
 
-output "cosmos_db_account_name" {
-  description = "Name of the Cosmos DB account"
-  value       = azurerm_cosmosdb_account.main.name
+output "cosmosdb_container_name" {
+  description = "Name of the Cosmos DB SQL container"
+  value       = azurerm_cosmosdb_sql_container.incidents.name
 }

@@ -1,13 +1,13 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# Azure Container Registry (Premium — required for Private Endpoint)
-# ─────────────────────────────────────────────────────────────────────────────
+# ===========================================================================
+# Module: acr
+# Source: terraform-ml — Azure Container Registry
+# ===========================================================================
 
 resource "azurerm_container_registry" "main" {
-  name                          = "acrpredmaint${var.env}"
-  resource_group_name           = var.resource_group_name
-  location                      = var.location
-  sku                           = "Premium"
-  admin_enabled                 = false
-  public_network_access_enabled = true
-  tags                          = var.tags
+  name                = "crmlops${var.suffix}"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  sku                 = var.sku
+  admin_enabled       = true
+  tags                = var.tags
 }

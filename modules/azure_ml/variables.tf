@@ -8,46 +8,30 @@ variable "location" {
   type        = string
 }
 
-variable "env" {
-  description = "Environment name (preprod or prod)"
+variable "workspace_name" {
+  description = "Azure ML workspace name"
+  type        = string
+  default     = "aml-rca-dev"
+}
+
+variable "application_insights_id" {
+  description = "ID of the Application Insights instance"
   type        = string
 }
 
 variable "key_vault_id" {
-  description = "Resource ID of the Key Vault"
+  description = "ID of the Key Vault"
   type        = string
 }
 
 variable "storage_account_id" {
-  description = "Resource ID of the ML data storage account"
+  description = "ID of the Storage Account"
   type        = string
 }
 
-variable "acr_id" {
-  description = "Resource ID of the Container Registry"
+variable "container_registry_id" {
+  description = "ID of the Container Registry"
   type        = string
-}
-
-variable "log_analytics_workspace_id" {
-  description = "Resource ID of the Log Analytics Workspace"
-  type        = string
-}
-
-variable "private_subnet_id" {
-  description = "Subnet ID for the compute cluster"
-  type        = string
-}
-
-variable "ml_compute_vm_size" {
-  description = "VM size for the training compute cluster"
-  type        = string
-  default     = "Standard_DS2_v2"
-}
-
-variable "ml_compute_max_nodes" {
-  description = "Maximum nodes for the training compute cluster"
-  type        = number
-  default     = 2
 }
 
 variable "tags" {

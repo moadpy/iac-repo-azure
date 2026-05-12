@@ -1,5 +1,5 @@
 output "key_vault_id" {
-  description = "Resource ID of the Key Vault"
+  description = "ID of the Key Vault"
   value       = azurerm_key_vault.main.id
 }
 
@@ -9,6 +9,6 @@ output "key_vault_name" {
 }
 
 output "key_vault_uri" {
-  description = "Vault URI of the Key Vault"
+  description = "URI of the Key Vault"
   value       = azurerm_key_vault.main.vault_uri
 }

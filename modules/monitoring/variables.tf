@@ -8,8 +8,8 @@ variable "location" {
   type        = string
 }
 
-variable "env" {
-  description = "Environment name (preprod or prod)"
+variable "suffix" {
+  description = "Random suffix for globally unique names"
   type        = string
 }
 

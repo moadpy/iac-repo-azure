@@ -1,131 +1,186 @@
+# ===========================================================================
+# Root variables.tf — All inputs for the modular infrastructure
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Global
+# ---------------------------------------------------------------------------
 variable "resource_group_name" {
   description = "Name of the pre-existing resource group (sandbox: SP cannot create RGs)"
   type        = string
+  default     = "dev-env-rg"
 }
 
-variable "env" {
-  description = "Deployment environment name (preprod or prod)"
+variable "environment" {
+  description = "Deployment environment (dev or prod)"
   type        = string
+  default     = "dev"
+
   validation {
-    condition     = contains(["preprod", "prod"], var.env)
-    error_message = "env must be one of: preprod, prod."
+    condition     = contains(["dev", "prod"], var.environment)
+    error_message = "Environment must be 'dev' or 'prod'."
   }
 }
 
 variable "location" {
-  description = "Azure region for all resources"
+  description = "Azure region for all resources (except OpenAI which may differ)"
+  type        = string
+  default     = "westeurope"
+}
+
+# ---------------------------------------------------------------------------
+# Storage
+# ---------------------------------------------------------------------------
+variable "storage_container_name" {
+  description = "Blob container name for ML data"
+  type        = string
+  default     = "ml-data-dev"
+}
+
+# ---------------------------------------------------------------------------
+# Azure ML
+# ---------------------------------------------------------------------------
+variable "ml_workspace_name" {
+  description = "Azure ML workspace name"
+  type        = string
+  default     = "aml-rca-dev"
+}
+
+# ---------------------------------------------------------------------------
+# Azure OpenAI
+# ---------------------------------------------------------------------------
+variable "openai_location" {
+  description = <<-EOT
+    Azure region for Azure OpenAI.
+    Must be a region where Azure OpenAI is available — not all regions support it.
+    If you get a quota error, try: swedencentral, francecentral, or eastus2.
+  EOT
   type        = string
   default     = "eastus"
 }
 
-variable "vnet_cidr" {
-  description = "CIDR block for the Virtual Network"
+variable "chat_model_name" {
+  description = "Name of the chat model to deploy"
   type        = string
+  default     = "gpt-5.4-mini"
 }
 
-variable "public_subnet_cidrs" {
-  description = "List of CIDR blocks for public subnets (one per AZ, minimum 2)"
-  type        = list(string)
-  validation {
-    condition     = length(var.public_subnet_cidrs) >= 2
-    error_message = "At least 2 public subnet CIDRs required (one per AZ)."
-  }
-}
-
-variable "private_subnet_cidrs" {
-  description = "List of CIDR blocks for private subnets (one per AZ, minimum 2)"
-  type        = list(string)
-  validation {
-    condition     = length(var.private_subnet_cidrs) >= 2
-    error_message = "At least 2 private subnet CIDRs required (one per AZ)."
-  }
-}
-
-variable "database_subnet_cidrs" {
-  description = "List of CIDR blocks for database subnets (one per AZ, minimum 2)"
-  type        = list(string)
-  validation {
-    condition     = length(var.database_subnet_cidrs) >= 2
-    error_message = "At least 2 database subnet CIDRs required (one per AZ)."
-  }
-}
-
-variable "aks_node_vm_size" {
-  description = "VM size for AKS default node pool"
+variable "chat_model_version" {
+  description = "Version of the chat model"
   type        = string
-  default     = "Standard_D2s_v3"
+  default     = "2026-03-17"
 }
 
-variable "aks_node_count_min" {
-  description = "Minimum node count for AKS autoscaler"
+variable "chat_sku_name" {
+  description = "SKU name for chat deployment (Standard, DataZoneStandard, etc.)"
+  type        = string
+  default     = "DataZoneStandard"
+}
+
+variable "chat_sku_capacity" {
+  description = "Capacity (TPU) for chat deployment"
   type        = number
-  default     = 1
-  validation {
-    condition     = var.aks_node_count_min >= 1
-    error_message = "Minimum AKS node count must be at least 1."
-  }
+  default     = 100
 }
 
-variable "aks_node_count_max" {
-  description = "Maximum node count for AKS autoscaler"
-  type        = number
-  default     = 3
-  validation {
-    condition     = var.aks_node_count_max >= 1
-    error_message = "Maximum AKS node count must be at least 1."
-  }
-}
-
-variable "search_sku" {
-  description = "SKU for Azure AI Search service (sandbox: only free or basic allowed)"
-  type        = string
-  default     = "basic"
-  validation {
-    condition     = contains(["free", "basic", "standard", "standard2", "standard3", "storage_optimized_l1", "storage_optimized_l2"], var.search_sku)
-    error_message = "Invalid search_sku value."
-  }
-}
-
-variable "ml_compute_vm_size" {
-  description = "VM size for Azure ML compute cluster"
-  type        = string
-  default     = "Standard_DS2_v2"
-}
-
-variable "ml_compute_max_nodes" {
-  description = "Maximum node count for Azure ML compute cluster"
-  type        = number
-  default     = 1
-  validation {
-    condition     = var.ml_compute_max_nodes >= 1
-    error_message = "ml_compute_max_nodes must be at least 1."
-  }
-}
-
-variable "openai_gpt_model" {
-  description = "Azure OpenAI GPT model name to deploy"
-  type        = string
-  default     = "gpt-4o"
-}
-
-variable "openai_embedding_model" {
-  description = "Azure OpenAI embedding model name to deploy"
+variable "embedding_model_name" {
+  description = "Name of the embedding model to deploy"
   type        = string
   default     = "text-embedding-3-small"
 }
 
-variable "openai_gpt_capacity_tpu" {
-  description = "Throughput capacity (TPU) for GPT deployment"
-  type        = number
-  default     = 10
+variable "embedding_model_version" {
+  description = "Version of the embedding model"
+  type        = string
+  default     = "1"
 }
 
-variable "openai_embedding_capacity_tpu" {
-  description = "Throughput capacity (TPU) for embedding deployment"
-  type        = number
-  default     = 20
+variable "embedding_sku_name" {
+  description = "SKU name for embedding deployment"
+  type        = string
+  default     = "Standard"
 }
 
+variable "embedding_sku_capacity" {
+  description = "Capacity (TPU) for embedding deployment"
+  type        = number
+  default     = 120
+}
+
+# ---------------------------------------------------------------------------
+# Azure AI Search
+# ---------------------------------------------------------------------------
+variable "search_sku" {
+  description = <<-EOT
+    Azure AI Search SKU tier.
+    "free"  — $0/month, 50 MB storage, 3 indexes. Use for POC/dev.
+    "basic" — ~$73/month, 15 GB storage, 15 indexes. Use for staging/prod.
+  EOT
+  type        = string
+  default     = "free"
+
+  validation {
+    condition     = contains(["free", "basic", "standard"], var.search_sku)
+    error_message = "search_sku must be 'free', 'basic', or 'standard'."
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Dev VM (optional — toggle with deploy_dev_vm)
+# ---------------------------------------------------------------------------
+variable "deploy_dev_vm" {
+  description = "Whether to deploy the dev VM for backend development"
+  type        = bool
+  default     = true
+}
+
+variable "dev_vm_size" {
+  description = "VM size for the dev VM"
+  type        = string
+  default     = "Standard_D2s_v3"
+}
+
+variable "dev_vm_admin_username" {
+  description = "Admin username for the dev VM"
+  type        = string
+  default     = "azureuser"
+}
+
+variable "dev_vm_ssh_public_key_path" {
+  description = "Path to the SSH public key file for the dev VM"
+  type        = string
+  default     = "~/.ssh/id_rsa.pub"
+}
+
+# ---------------------------------------------------------------------------
+# Azure AI Search — Index Configuration
+# ---------------------------------------------------------------------------
+variable "search_index_name" {
+  description = "Name of the Azure AI Search index used by the RAG knowledge base"
+  type        = string
+  default     = "rca-knowledge-base"
+}
+
+# ---------------------------------------------------------------------------
+# GitHub Integration (for PR Ingestor Azure Function)
+# ---------------------------------------------------------------------------
+variable "github_webhook_secret" {
+  description = "Shared secret for validating GitHub webhook signatures (X-Hub-Signature-256)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "github_token" {
+  description = "GitHub Personal Access Token with 'repo' scope — used to fetch PR diffs"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+# ---------------------------------------------------------------------------
+# Tags
+# ---------------------------------------------------------------------------
 variable "tags" {
   description = "Additional tags to merge with default tags"
   type        = map(string)

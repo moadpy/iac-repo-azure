@@ -32,3 +32,10 @@ service-restrictions.md
 # Windows specific
 Thumb.db
 desktop.ini
+
+terraform.tfvars
+*.terraform.lock.hcl
+
+scripts/bootstrap-session.sh
+scripts/bootstrap-session.ps1
+

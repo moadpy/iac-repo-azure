@@ -125,11 +125,11 @@ ml-repo/procedures/
 | **CDN + WAF** | CloudFront + WAF | Azure Front Door (Standard) | Built-in WAF, global anycast |
 | **Frontend storage** | S3 (static website) | Azure Blob Storage (Static Website) | Identical concept |
 | **API entry point** | API Gateway (HTTP) + VPC Link | Azure Application Gateway (WAF v2) | WAF + routing into private VNet |
-| **Container orchestration** | EKS | Azure Kubernetes Service (AKS) | Azure CNI, Workload Identity |
+| **Container orchestration** | EKS | Azure Kubernetes Service (AKS) | Azure CNI, Workload Identity, **Private Cluster** |
 | **Container registry** | ECR | Azure Container Registry (ACR) | Premium SKU for Private Endpoint |
 | **NoSQL / Session store** | DynamoDB | Azure Cosmos DB (NoSQL API) | Serverless mode for sandboxes |
 | **Vector search** | OpenSearch (k-NN) | Azure AI Search (vector search) | HNSW algorithm + semantic ranking |
-| **Serverless ingestion** | Lambda (VPC) | CI/CD Pipeline / AKS Job | *Sandbox Constraint*: Azure Functions quota is 0. Moved to CI/CD or K8s Job. |
+| **Serverless ingestion** | Lambda (VPC) | AKS CronJob (rag-ingest) | Runs inside cluster on weekly schedule — no external compute needed |
 | **Secrets** | Secrets Manager | Azure Key Vault | Managed Identity access — no passwords |
 | **ML Training** | SageMaker Training Jobs | Azure Machine Learning (Training Jobs) | **RESTORED** — core MLOps component |
 | **ML Inference endpoint** | SageMaker Managed Endpoint | Azure ML Online Endpoint | Hosts trained failure classifier |
@@ -141,6 +141,8 @@ ml-repo/procedures/
 | **IaC State** | S3 + DynamoDB lock | Azure Blob Storage (azurerm backend) | Built-in state locking via Blob lease |
 | **CI/CD Identity** | OIDC → IAM Role | Service Principal + GitHub Secrets | OIDC federation also available |
 | **GitOps** | ArgoCD on EKS | ArgoCD on AKS | Unchanged |
+| **Secure admin access** | Session Manager / Bastion | **Azure Bastion + Jumpbox VM** | Hub VNet peered to Spoke — browser-based SSH |
+| **Management hub network** | Transit Gateway / Hub VPC | **Hub VNet (10.10.0.0/16)** | Deployed once, peered to all Spoke VNets |
 
 ---
 
@@ -156,16 +158,17 @@ ml-repo/procedures/
 
 ### Address Space
 
-| Environment | VNet CIDR |
-|---|---|
-| preprod | `10.0.0.0/16` |
-| prod | `10.1.0.0/16` |
+| VNet | CIDR | Purpose |
+|---|---|---|
+| Hub | `10.10.0.0/16` | Management plane — Bastion + Jumpbox (deployed once) |
+| preprod (Spoke) | `10.0.0.0/16` | Application workloads — Preprod environment |
+| prod (Spoke) | `10.1.0.0/16` | Application workloads — Prod environment |
 
-### Subnet Layout (per environment)
+### Subnet Layout (Spoke VNet — per environment)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  Azure VNet  10.x.0.0/16                                                │
+│  Spoke VNet  10.x.0.0/16                                                │
 │                                                                          │
 │  PUBLIC TIER — Application Gateway + NAT Gateway                        │
 │  ┌─────────────────────────────┬──────────────────────────────────┐    │
@@ -174,11 +177,11 @@ ml-repo/procedures/
 │  │  [NAT Gateway EIP-1]         │                                  │    │
 │  └─────────────────────────────┴──────────────────────────────────┘    │
 │                    ▼ (path-based routing to AKS Internal LB)             │
-│  PRIVATE TIER — AKS + Azure Functions                                   │
+│  PRIVATE TIER — AKS (Private Cluster)                                   │
 │  ┌─────────────────────────────┬──────────────────────────────────┐    │
 │  │  AZ1: 10.x.0.0/24           │  AZ2: 10.x.1.0/24               │    │
 │  │  [AKS Node Pool]             │  [AKS Node Pool]                 │    │
-│  │  [Azure Functions]           │  [Azure Functions]               │    │
+│  │  [Private API Server PE]     │                                  │    │
 │  └─────────────────────────────┴──────────────────────────────────┘    │
 │                    ▼ (all via Private Endpoints)                         │
 │  DATABASE TIER — Private Endpoints for all PaaS                         │
@@ -186,9 +189,26 @@ ml-repo/procedures/
 │  │  AZ1: 10.x.200.0/24         │  AZ2: 10.x.201.0/24             │    │
 │  │  [PE: Cosmos DB]             │  [PE: Azure AI Search]           │    │
 │  │  [PE: Blob Storage]          │  [PE: ACR]                       │    │
-│  │  [PE: Key Vault]             │  [PE: Azure Monitor]             │    │
-│  │  [PE: Azure ML]              │                                  │    │
+│  │  [PE: Key Vault]             │  [PE: Azure ML]                  │    │
 │  └─────────────────────────────┴──────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────┘
+          │ VNet Peering (bidirectional)
+          ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Hub VNet  10.10.0.0/16  (deployed once via hub/ Terraform root)        │
+│                                                                          │
+│  BASTION TIER — AzureBastionSubnet (Azure-enforced name)                │
+│  ┌───────────────────────────────────────────────────────────────┐      │
+│  │  10.10.0.0/26                                                  │      │
+│  │  [Azure Bastion Host — Public IP for browser SSH]              │      │
+│  └───────────────────────────────────────────────────────────────┘      │
+│                                                                          │
+│  MANAGEMENT TIER — Jumpbox VM                                            │
+│  ┌───────────────────────────────────────────────────────────────┐      │
+│  │  10.10.1.0/24                                                  │      │
+│  │  [Jumpbox VM — Standard_B1s — kubectl, helm, az cli]          │      │
+│  │  [NSG: SSH from Bastion only — no public IP]                   │      │
+│  └───────────────────────────────────────────────────────────────┘      │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -202,9 +222,9 @@ ml-repo/procedures/
 | Azure Key Vault | `privatelink.vaultcore.azure.net` |
 | Azure Container Registry | `privatelink.azurecr.io` |
 | Azure ML Workspace | `privatelink.api.azureml.ms` |
-| Azure Monitor / Log Analytics | `privatelink.monitor.azure.com` |
+| **AKS API Server** | **`privatelink.<region>.azmk8s.io`** (auto-created by Azure when `private_cluster_enabled = true`) |
 
-All Private DNS Zones are linked to the VNet — internal services resolve PaaS hostnames to private IPs without any traffic leaving the VNet.
+All Private DNS Zones are linked to the Spoke VNet. The **AKS Private DNS Zone is additionally linked to the Hub VNet** so the Jumpbox can resolve the private API Server hostname.
 
 ### NSG Rules Summary
 
@@ -213,6 +233,7 @@ All Private DNS Zones are linked to the VNet — internal services resolve PaaS 
 | Public | Internet → 443 (App Gateway health probes + users) | All (Azure management) |
 | Private | App Gateway → 8080 (FastAPI pods); VNet CIDR → all | VNet CIDR (Private Endpoints); internet via NAT (for image pulls) |
 | Database | VNet CIDR → 443 only | Deny all |
+| **Management** | **SSH (22) from AzureBastionSubnet CIDR only; Deny all other inbound** | **VNet CIDR (to reach AKS API via peering); Internet (for az cli, apt)** |
 
 ---
 
@@ -515,8 +536,7 @@ iac-repo/
 │   ├── aks/                      # AKS cluster (Azure CNI, Workload Identity)
 │   ├── acr/                      # Azure Container Registry (Premium for PE)
 │   ├── cosmos_db/                # Cosmos DB NoSQL serverless (session history)
-│   ├── ai_search/                # Azure AI Search Standard S1 (vector index)
-│   ├── azure_functions/          # (Disabled) Sandbox has 0 quota for Azure Functions.
+│   ├── ai_search/                # Azure AI Search Basic SKU (sandbox: Free or Basic only)
 │   ├── key_vault/                # Azure Key Vault (secrets, endpoint URLs)
 │   ├── azure_ml/                 # Azure ML Workspace + Compute Cluster + Online Endpoint
 │   ├── azure_openai/             # Azure OpenAI: gpt-4o + text-embedding-3-small
@@ -538,7 +558,7 @@ iac-repo/
 
 ```hcl
 env      = "preprod"
-location = "westeurope"
+location = "eastus"
 
 vnet_cidr             = "10.0.0.0/16"
 public_subnet_cidrs   = ["10.0.100.0/24", "10.0.101.0/24"]
@@ -549,7 +569,8 @@ aks_node_vm_size      = "Standard_DS2_v2"
 aks_node_count_min    = 1
 aks_node_count_max    = 2
 
-search_sku            = "standard"
+# Sandbox: Free or Basic only (service-restrictions.md — Azure AI Search)
+search_sku            = "basic"
 
 ml_compute_vm_size    = "Standard_DS2_v2"
 ml_compute_max_nodes  = 2
@@ -564,7 +585,7 @@ openai_embedding_capacity_tpu = 20
 
 ```hcl
 env      = "prod"
-location = "westeurope"
+location = "eastus"
 
 vnet_cidr             = "10.1.0.0/16"
 public_subnet_cidrs   = ["10.1.100.0/24", "10.1.101.0/24"]
@@ -575,7 +596,8 @@ aks_node_vm_size      = "Standard_DS2_v2"
 aks_node_count_min    = 2
 aks_node_count_max    = 4
 
-search_sku            = "standard"
+# Sandbox: Free or Basic only (service-restrictions.md — Azure AI Search)
+search_sku            = "basic"
 
 ml_compute_vm_size    = "Standard_DS2_v2"
 ml_compute_max_nodes  = 4
