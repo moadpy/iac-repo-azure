@@ -38,6 +38,8 @@ resource "azurerm_linux_function_app" "ingestor" {
   storage_account_access_key = azurerm_storage_account.function_app.primary_access_key
 
   site_config {
+    application_insights_connection_string = var.appinsights_connection_string
+
     application_stack {
       python_version = "3.11"
     }
@@ -49,17 +51,15 @@ resource "azurerm_linux_function_app" "ingestor" {
     "BUILD_FLAGS"                    = "UseExpressBuild"
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "true"
 
-    # Monitoring — Application Insights
-    "APPLICATIONINSIGHTS_CONNECTION_STRING" = var.appinsights_connection_string
-
     # Azure OpenAI — endpoints only, auth via Managed Identity
-    "AZURE_OPENAI_ENDPOINT"              = var.openai_endpoint
-    "AZURE_OPENAI_API_VERSION"           = var.openai_api_version
-    "AZURE_OPENAI_EMBEDDING_DEPLOYMENT"  = var.openai_embedding_deployment
+    "AZURE_OPENAI_ENDPOINT"             = var.openai_endpoint
+    "AZURE_OPENAI_API_VERSION"          = var.openai_api_version
+    "AZURE_OPENAI_EMBEDDING_DEPLOYMENT" = var.openai_embedding_deployment
 
     # Azure AI Search — endpoint only, auth via Managed Identity
-    "AZURE_SEARCH_ENDPOINT"    = var.search_endpoint
-    "AZURE_SEARCH_INDEX_NAME"  = var.search_index_name
+    "AZURE_SEARCH_ENDPOINT"             = var.search_endpoint
+    "AZURE_SEARCH_EVIDENCE_INDEX_NAME"  = var.search_evidence_index_name
+    "AZURE_SEARCH_RUNBOOK_INDEX_NAME"   = var.search_runbook_index_name
 
     # GitHub (external service — PAT required)
     "GITHUB_WEBHOOK_SECRET" = var.github_webhook_secret
@@ -74,4 +74,9 @@ resource "azurerm_linux_function_app" "ingestor" {
   }
 
   tags = var.tags
+
+  # Azure auto-adds a hidden-link tag when App Insights is connected — ignore it
+  lifecycle {
+    ignore_changes = [tags["hidden-link: /app-insights-resource-id"]]
+  }
 }

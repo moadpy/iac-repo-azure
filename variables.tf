@@ -155,10 +155,16 @@ variable "dev_vm_ssh_public_key_path" {
 # ---------------------------------------------------------------------------
 # Azure AI Search — Index Configuration
 # ---------------------------------------------------------------------------
-variable "search_index_name" {
-  description = "Name of the Azure AI Search index used by the RAG knowledge base"
+variable "search_evidence_index_name" {
+  description = "Name of the Azure AI Search index for evidence documents"
   type        = string
-  default     = "rca-knowledge-base"
+  default     = "rca-evidence-index"
+}
+
+variable "search_runbook_index_name" {
+  description = "Name of the Azure AI Search index for runbook documents"
+  type        = string
+  default     = "rca-runbook-index"
 }
 
 # ---------------------------------------------------------------------------
@@ -185,4 +191,84 @@ variable "tags" {
   description = "Additional tags to merge with default tags"
   type        = map(string)
   default     = {}
+}
+
+# ---------------------------------------------------------------------------
+# AKS (optional — toggle with deploy_aks)
+# ---------------------------------------------------------------------------
+variable "deploy_aks" {
+  description = "Whether to deploy the AKS cluster (set false to skip in cost-sensitive envs)"
+  type        = bool
+  default     = false
+}
+
+variable "aks_kubernetes_version" {
+  description = "Kubernetes version for the AKS cluster"
+  type        = string
+  default     = "1.35"
+}
+
+variable "aks_sku_tier" {
+  description = "AKS SKU tier: Free (no SLA) or Standard (99.95% SLA)"
+  type        = string
+  default     = "Free"
+
+  validation {
+    condition     = contains(["Free", "Standard", "Premium"], var.aks_sku_tier)
+    error_message = "aks_sku_tier must be 'Free', 'Standard', or 'Premium'."
+  }
+}
+
+variable "aks_system_node_vm_size" {
+  description = "VM size for the AKS system node pool"
+  type        = string
+  default     = "Standard_D2s_v3"
+}
+
+variable "aks_system_node_count" {
+  description = "Number of nodes in the AKS system node pool"
+  type        = number
+  default     = 2
+}
+
+variable "aks_deploy_user_node_pool" {
+  description = "Whether to add a dedicated user node pool (ML workloads)"
+  type        = bool
+  default     = false
+}
+
+variable "aks_user_node_vm_size" {
+  description = "VM size for the AKS user node pool"
+  type        = string
+  default     = "Standard_D4s_v3"
+}
+
+variable "aks_user_node_count" {
+  description = "Number of nodes in the AKS user node pool"
+  type        = number
+  default     = 1
+}
+
+variable "aks_vnet_cidr" {
+  description = "CIDR block for the AKS VNet (must not overlap with existing VNets)"
+  type        = string
+  default     = "10.1.0.0/16"
+}
+
+variable "aks_subnet_cidr" {
+  description = "CIDR block for the AKS nodes subnet"
+  type        = string
+  default     = "10.1.0.0/22"
+}
+
+variable "aks_service_cidr" {
+  description = "CIDR range for Kubernetes services (must not overlap with VNet or subnet)"
+  type        = string
+  default     = "10.200.0.0/16"
+}
+
+variable "aks_dns_service_ip" {
+  description = "IP address for the Kubernetes DNS service (must be inside aks_service_cidr)"
+  type        = string
+  default     = "10.200.0.10"
 }

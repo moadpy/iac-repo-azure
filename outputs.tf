@@ -126,3 +126,33 @@ output "FUNCTION_APP_HOSTNAME" {
   value       = module.functions.function_app_default_hostname
 }
 
+# ---------------------------------------------------------------------------
+# AKS (conditional)
+# ---------------------------------------------------------------------------
+output "AKS_CLUSTER_NAME" {
+  description = "Name of the AKS cluster (if deployed)"
+  value       = var.deploy_aks ? module.aks[0].aks_name : null
+}
+
+output "AKS_CLUSTER_FQDN" {
+  description = "API server FQDN of the AKS cluster (if deployed)"
+  value       = var.deploy_aks ? module.aks[0].cluster_fqdn : null
+}
+
+output "AKS_OIDC_ISSUER_URL" {
+  description = "OIDC issuer URL for Workload Identity federation (if deployed)"
+  value       = var.deploy_aks ? module.aks[0].oidc_issuer_url : null
+}
+
+output "AKS_KUBE_CONFIG_RAW" {
+  description = "Raw kubeconfig — pipe to ~/.kube/config or use with KUBECONFIG (sensitive)"
+  value       = var.deploy_aks ? module.aks[0].kube_config_raw : null
+  sensitive   = true
+}
+
+output "AKS_NODE_RESOURCE_GROUP" {
+  description = "Auto-generated resource group that holds AKS infrastructure nodes"
+  value       = var.deploy_aks ? module.aks[0].node_resource_group : null
+}
+
+

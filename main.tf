@@ -201,8 +201,9 @@ module "functions" {
   openai_embedding_deployment = module.azure_openai.embedding_deployment_name
 
   # Azure AI Search — endpoint only, auth via Managed Identity
-  search_endpoint   = module.ai_search.search_endpoint
-  search_index_name = var.search_index_name
+  search_endpoint             = module.ai_search.search_endpoint
+  search_evidence_index_name  = var.search_evidence_index_name
+  search_runbook_index_name   = var.search_runbook_index_name
 
   # Monitoring — Application Insights
   appinsights_connection_string = module.monitoring.application_insights_connection_string
@@ -241,7 +242,7 @@ module "identity" {
 }
 
 # ─────────────────────────────────────────
-# 10. Dev VM (backend development environment)
+# 11. Dev VM (backend development environment)
 #     Independent — can be disabled by setting deploy_dev_vm = false
 # ─────────────────────────────────────────
 module "dev_vm" {
@@ -255,4 +256,54 @@ module "dev_vm" {
   admin_username      = var.dev_vm_admin_username
   ssh_public_key_path = var.dev_vm_ssh_public_key_path
   tags                = local.tags
+}
+
+# ─────────────────────────────────────────
+# 12. AKS Networking (Dedicated VNet)
+# ─────────────────────────────────────────
+resource "azurerm_virtual_network" "aks" {
+  count               = var.deploy_aks ? 1 : 0
+  name                = "vnet-aks-${local.suffix}"
+  address_space       = [var.aks_vnet_cidr]
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+  tags                = local.tags
+}
+
+resource "azurerm_subnet" "aks" {
+  count                = var.deploy_aks ? 1 : 0
+  name                 = "snet-aks-nodes"
+  resource_group_name  = azurerm_resource_group.main.name
+  virtual_network_name = azurerm_virtual_network.aks[0].name
+  address_prefixes     = [var.aks_subnet_cidr]
+}
+
+# ─────────────────────────────────────────
+# 13. AKS Cluster
+#     Depends on: acr (AcrPull), monitoring (Log Analytics)
+#     Toggle with deploy_aks = false to skip in dev/low-cost envs
+# ─────────────────────────────────────────
+module "aks" {
+  source = "./modules/aks"
+  count  = var.deploy_aks ? 1 : 0
+
+  resource_group_name        = azurerm_resource_group.main.name
+  location                   = var.location
+  suffix                     = local.suffix
+  log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
+  acr_id                     = module.acr.acr_id
+  vnet_id                    = azurerm_virtual_network.aks[0].id
+  subnet_id                  = azurerm_subnet.aks[0].id
+  kubernetes_version         = var.aks_kubernetes_version
+  sku_tier                   = var.aks_sku_tier
+  system_node_vm_size        = var.aks_system_node_vm_size
+  system_node_count          = var.aks_system_node_count
+  deploy_user_node_pool      = var.aks_deploy_user_node_pool
+  user_node_vm_size          = var.aks_user_node_vm_size
+  user_node_count            = var.aks_user_node_count
+  service_cidr               = var.aks_service_cidr
+  dns_service_ip             = var.aks_dns_service_ip
+  tags                       = local.tags
+
+  depends_on = [module.acr, module.monitoring]
 }

@@ -10,6 +10,8 @@ resource "azurerm_search_service" "main" {
   sku                 = var.search_sku
   tags                = var.tags
 
+  authentication_failure_mode = "http401WithBearerChallenge"
+
   # Free tier does not support replicas/partitions — these are ignored on free
   replica_count   = var.search_sku == "free" ? null : 1
   partition_count = var.search_sku == "free" ? null : 1

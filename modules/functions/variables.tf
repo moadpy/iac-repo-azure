@@ -59,10 +59,16 @@ variable "search_endpoint" {
   default     = ""
 }
 
-variable "search_index_name" {
-  description = "Azure AI Search index name"
+variable "search_evidence_index_name" {
+  description = "Azure AI Search index name for evidence documents"
   type        = string
-  default     = "rca-knowledge-base"
+  default     = "rca-evidence-index"
+}
+
+variable "search_runbook_index_name" {
+  description = "Azure AI Search index name for runbook documents"
+  type        = string
+  default     = "rca-runbook-index"
 }
 
 # ---------------------------------------------------------------------------
