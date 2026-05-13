@@ -26,8 +26,8 @@ resource "azurerm_cognitive_deployment" "chat" {
     version = var.chat_model_version
   }
 
-  scale {
-    type     = var.chat_sku_name
+  sku {
+    name     = var.chat_sku_name
     capacity = var.chat_sku_capacity
   }
 }
@@ -44,8 +44,8 @@ resource "azurerm_cognitive_deployment" "embedding" {
     version = var.embedding_model_version
   }
 
-  scale {
-    type     = var.embedding_sku_name
+  sku {
+    name     = var.embedding_sku_name
     capacity = var.embedding_sku_capacity
   }
 }

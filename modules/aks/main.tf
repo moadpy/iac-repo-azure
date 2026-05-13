@@ -12,6 +12,8 @@
 # Naming convention: aks-<suffix>
 # ===========================================================================
 
+data "azurerm_client_config" "current" {}
+
 # ---------------------------------------------------------------------------
 # AKS Cluster
 # ---------------------------------------------------------------------------
@@ -36,11 +38,11 @@ resource "azurerm_kubernetes_cluster" "aks" {
     temporary_name_for_rotation = "tempsystem"
 
     # Autoscaler — mutually exclusive with node_count
-    enable_auto_scaling = var.system_enable_auto_scaling
-    min_count           = var.system_enable_auto_scaling ? var.system_min_count : null
-    max_count           = var.system_enable_auto_scaling ? var.system_max_count : null
+    auto_scaling_enabled = var.system_enable_auto_scaling
+    min_count            = var.system_enable_auto_scaling ? var.system_min_count : null
+    max_count            = var.system_enable_auto_scaling ? var.system_max_count : null
     # Fixed count — only used when autoscaling is OFF
-    node_count          = var.system_enable_auto_scaling ? null : var.system_node_count
+    node_count = var.system_enable_auto_scaling ? null : var.system_node_count
 
     upgrade_settings {
       max_surge = "10%"
@@ -63,8 +65,8 @@ resource "azurerm_kubernetes_cluster" "aks" {
 
   # --- Azure AD RBAC ---
   azure_active_directory_role_based_access_control {
-    managed            = true # required in azurerm ~3.x; deprecated but harmless
     azure_rbac_enabled = true
+    tenant_id          = data.azurerm_client_config.current.tenant_id
   }
 
   # --- Monitoring ---
@@ -79,20 +81,18 @@ resource "azurerm_kubernetes_cluster" "aks" {
 # User node pool for Backend Agent (FastAPI)
 # ---------------------------------------------------------------------------
 resource "azurerm_kubernetes_cluster_node_pool" "user" {
-  count = var.deploy_user_node_pool ? 1 : 0
-
   name                  = "backend"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
   vm_size               = var.user_node_vm_size
   vnet_subnet_id        = var.subnet_id
   mode                  = "User"
-  os_disk_size_gb       = 64 # Reduced from 128 as it's not ML-heavy
+  os_disk_size_gb       = 64
 
   # Autoscaler — same pattern as the system pool
-  enable_auto_scaling = var.user_enable_auto_scaling
-  min_count           = var.user_enable_auto_scaling ? var.user_min_count : null
-  max_count           = var.user_enable_auto_scaling ? var.user_max_count : null
-  node_count          = var.user_enable_auto_scaling ? null : var.user_node_count
+  auto_scaling_enabled = var.user_enable_auto_scaling
+  min_count            = var.user_enable_auto_scaling ? var.user_min_count : null
+  max_count            = var.user_enable_auto_scaling ? var.user_max_count : null
+  node_count           = var.user_enable_auto_scaling ? null : var.user_node_count
 
   node_labels = {
     "app" = "rca-agent"

@@ -57,9 +57,9 @@ resource "azurerm_linux_function_app" "ingestor" {
     "AZURE_OPENAI_EMBEDDING_DEPLOYMENT" = var.openai_embedding_deployment
 
     # Azure AI Search — endpoint only, auth via Managed Identity
-    "AZURE_SEARCH_ENDPOINT"             = var.search_endpoint
-    "AZURE_SEARCH_EVIDENCE_INDEX_NAME"  = var.search_evidence_index_name
-    "AZURE_SEARCH_RUNBOOK_INDEX_NAME"   = var.search_runbook_index_name
+    "AZURE_SEARCH_ENDPOINT"            = var.search_endpoint
+    "AZURE_SEARCH_EVIDENCE_INDEX_NAME" = var.search_evidence_index_name
+    "AZURE_SEARCH_RUNBOOK_INDEX_NAME"  = var.search_runbook_index_name
 
     # GitHub (external service — PAT required)
     "GITHUB_WEBHOOK_SECRET" = var.github_webhook_secret

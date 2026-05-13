@@ -5,6 +5,13 @@
 # ---------------------------------------------------------------------------
 # Global
 # ---------------------------------------------------------------------------
+variable "subscription_id" {
+  description = "Azure Subscription ID (required for AzureRM v4)"
+  type        = string
+  # No default to force the user or pipeline to provide it, or let them set ARM_SUBSCRIPTION_ID
+  default = ""
+}
+
 variable "resource_group_name" {
   description = "Name of the pre-existing resource group (sandbox: SP cannot create RGs)"
   type        = string

@@ -17,30 +17,6 @@
 #   dev_vm       ──── (independent)
 # ===========================================================================
 
-terraform {
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.100"
-    }
-    azuread = {
-      source  = "hashicorp/azuread"
-      version = "~> 2.47"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.6"
-    }
-  }
-}
-
-provider "azurerm" {
-  features {
-    key_vault {
-      purge_soft_delete_on_destroy = true
-    }
-  }
-}
 
 # ---------------------------------------------------------------------------
 # Shared data sources and random suffix
@@ -201,9 +177,9 @@ module "functions" {
   openai_embedding_deployment = module.azure_openai.embedding_deployment_name
 
   # Azure AI Search — endpoint only, auth via Managed Identity
-  search_endpoint             = module.ai_search.search_endpoint
-  search_evidence_index_name  = var.search_evidence_index_name
-  search_runbook_index_name   = var.search_runbook_index_name
+  search_endpoint            = module.ai_search.search_endpoint
+  search_evidence_index_name = var.search_evidence_index_name
+  search_runbook_index_name  = var.search_runbook_index_name
 
   # Monitoring — Application Insights
   appinsights_connection_string = module.monitoring.application_insights_connection_string
