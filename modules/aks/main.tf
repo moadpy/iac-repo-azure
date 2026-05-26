@@ -25,6 +25,10 @@ resource "azurerm_kubernetes_cluster" "aks" {
   kubernetes_version  = var.kubernetes_version
   sku_tier            = var.sku_tier
 
+  # --- Private Cluster ---
+  private_cluster_enabled = true
+  private_dns_zone_id     = "System"
+
   # --- System node pool ---
   # When autoscaling is enabled Azure controls the actual node count
   # between min_count and max_count — node_count must NOT be set.
@@ -32,7 +36,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
   default_node_pool {
     name                        = "system"
     vm_size                     = var.system_node_vm_size
-    os_disk_size_gb             = 50
+    os_disk_size_gb             = 30
     vnet_subnet_id              = var.subnet_id
     type                        = "VirtualMachineScaleSets"
     temporary_name_for_rotation = "tempsystem"
@@ -54,11 +58,16 @@ resource "azurerm_kubernetes_cluster" "aks" {
     type = "SystemAssigned"
   }
 
+  # --- OIDC & Workload Identity (Required for AGC ALB Controller) ---
+  oidc_issuer_enabled       = true
+  workload_identity_enabled = true
+
   # --- Network ---
   network_profile {
     network_plugin    = "azure"
     network_policy    = "azure"
     load_balancer_sku = "standard"
+    outbound_type     = "userAssignedNATGateway"
     service_cidr      = var.service_cidr
     dns_service_ip    = var.dns_service_ip
   }
@@ -86,7 +95,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "user" {
   vm_size               = var.user_node_vm_size
   vnet_subnet_id        = var.subnet_id
   mode                  = "User"
-  os_disk_size_gb       = 64
+  os_disk_size_gb       = 30
 
   # Autoscaler — same pattern as the system pool
   auto_scaling_enabled = var.user_enable_auto_scaling

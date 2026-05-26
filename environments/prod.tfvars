@@ -1,26 +1,25 @@
-env      = "prod"
-location = "eastus"
+environment              = "prod"
+location                 = "westeurope"
+resource_group_name      = "prod-env-rg"
+storage_container_name   = "ml-data-prod"
+ml_workspace_name        = "aml-rca-prod"
+deploy_frontdoor         = false
+deploy_dev_vm            = true
+deploy_developer_bastion = true
+github_webhook_secret    = "f12171e7b365ed961cf119ee92ae643219271416"
+github_token             = ""
 
-# Sandbox: set this to the resource group name shown in your Pluralsight portal
+# VNet settings for prod (non-overlapping)
+aks_vnet_cidr         = "10.200.0.0/16"
+aks_subnet_cidr       = "10.200.0.0/22"
+aks_agc_subnet_cidr   = "10.200.4.0/24"
+dev_subnet_cidr       = "10.200.5.0/24"
+pe_subnet_cidr        = "10.200.6.0/24"
+functions_subnet_cidr = "10.200.7.0/24"
 
-vnet_cidr            = "10.1.0.0/16"
-private_subnet_cidr  = "10.1.0.0/23"
-database_subnet_cidr = "10.1.200.0/24"
-
-# Standard_DS2_v2 = 2 CPUs. Max 3 nodes × 2 CPUs = 6 CPUs.
-# (Sandbox: max 10 CPUs total, max 3 nodes per AKS cluster)
-aks_node_vm_size   = "Standard_DS2_v2"
-aks_node_count_min = 2
-aks_node_count_max = 3
-
-# Sandbox: only Free or Basic allowed for AI Search
+# Service SKUs
 search_sku = "basic"
 
-# Sandbox: ML allowed SKUs include DS2_v2; max one instance
-ml_compute_vm_size   = "Standard_DS2_v2"
-ml_compute_max_nodes = 2
-
-openai_gpt_model              = "gpt-4o"
-openai_embedding_model        = "text-embedding-3-small"
-openai_gpt_capacity_tpu       = 30
-openai_embedding_capacity_tpu = 60
+# Architectural Hub reference variables (disabled/empty by default)
+hub_vnet_name                = ""
+hub_vnet_resource_group_name = ""

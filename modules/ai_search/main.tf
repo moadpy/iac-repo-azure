@@ -4,11 +4,12 @@
 # ===========================================================================
 
 resource "azurerm_search_service" "main" {
-  name                = "srch-rca-${var.suffix}"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  sku                 = var.search_sku
-  tags                = var.tags
+  name                          = "srch-rca-${var.suffix}"
+  resource_group_name           = var.resource_group_name
+  location                      = var.location
+  sku                           = var.search_sku
+  public_network_access_enabled = false
+  tags                          = var.tags
 
   authentication_failure_mode = "http401WithBearerChallenge"
 

@@ -3,7 +3,7 @@ name: Terraform Apply
 on:
   push:
     branches:
-      - develop
+      - dev
       - main
   workflow_dispatch:
     inputs:
@@ -25,6 +25,8 @@ env:
   # SP credentials for Terraform provider (tenant + subscription resolved at runtime)
   ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  TF_VAR_github_token: ${{ secrets.GH_TOKEN }}
+  TF_VAR_github_webhook_secret: ${{ secrets.GH_WEBHOOK_SECRET }}
 
 jobs:
   terraform-apply:
@@ -51,18 +53,17 @@ jobs:
             echo "name=preprod" >> "$GITHUB_OUTPUT"
           fi
 
-      # Derive the tenant domain from the username email (user@tenant.onmicrosoft.com)
-      # then login as a service principal — avoids MFA/device-flow entirely.
+      # Login as service principal using Tenant ID.
+      # This avoids MFA / device-flow that blocks non-interactive user logins.
       # --allow-no-subscriptions: SP is scoped to RG only (no subscription-level role),
       # so az login would otherwise abort with "No subscriptions found".
       - name: Azure login & resolve tenant/subscription
         run: |
-          TENANT_DOMAIN=$(echo "${{ secrets.AZURE_USERNAME }}" | cut -d'@' -f2)
           az login \
             --service-principal \
             --username "${{ secrets.AZURE_CLIENT_ID }}" \
             --password "${{ secrets.AZURE_CLIENT_SECRET }}" \
-            --tenant  "$TENANT_DOMAIN" \
+            --tenant  "${{ secrets.AZURE_TENANT_ID }}" \
             --allow-no-subscriptions \
             --output none
           # SP is RG-scoped: az account list returns a tenant-level entry, not a real

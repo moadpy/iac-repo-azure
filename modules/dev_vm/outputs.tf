@@ -13,12 +13,4 @@ output "ssh_command" {
   value       = "ssh -i ~/.ssh/id_rsa ${var.admin_username}@${azurerm_public_ip.dev.ip_address}"
 }
 
-output "vnet_id" {
-  description = "ID of the dev VNet"
-  value       = azurerm_virtual_network.dev.id
-}
 
-output "subnet_id" {
-  description = "ID of the dev subnet"
-  value       = azurerm_subnet.dev.id
-}

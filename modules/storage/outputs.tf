@@ -23,3 +23,13 @@ output "datasets_container_name" {
   description = "Name of the datasets blob container"
   value       = azurerm_storage_container.datasets.name
 }
+
+output "frontend_container_name" {
+  description = "Name of the frontend blob container"
+  value       = azurerm_storage_container.frontend.name
+}
+
+output "primary_web_host" {
+  description = "Primary web host for static website"
+  value       = azurerm_storage_account.ml.primary_web_host
+}

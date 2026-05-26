@@ -3,7 +3,7 @@ name: Terraform CI
 on:
   pull_request:
     branches:
-      - develop
+      - dev
       - main
 
 permissions:
@@ -15,6 +15,8 @@ env:
   # SP credentials for Terraform provider (tenant + subscription resolved at runtime)
   ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  TF_VAR_github_token: ${{ secrets.GH_TOKEN }}
+  TF_VAR_github_webhook_secret: ${{ secrets.GH_WEBHOOK_SECRET }}
 
 jobs:
   terraform-ci:
@@ -39,18 +41,17 @@ jobs:
             echo "name=preprod" >> "$GITHUB_OUTPUT"
           fi
 
-      # Derive tenant domain from username email, then login as service principal.
+      # Login as service principal using Tenant ID.
       # This avoids MFA / device-flow that blocks non-interactive user logins.
       # --allow-no-subscriptions: SP is scoped to RG only (no subscription-level role).
       - name: Azure login & resolve tenant/subscription
         id: azure
         run: |
-          TENANT_DOMAIN=$(echo "${{ secrets.AZURE_USERNAME }}" | cut -d'@' -f2)
           az login \
             --service-principal \
             --username "${{ secrets.AZURE_CLIENT_ID }}" \
             --password "${{ secrets.AZURE_CLIENT_SECRET }}" \
-            --tenant  "$TENANT_DOMAIN" \
+            --tenant  "${{ secrets.AZURE_TENANT_ID }}" \
             --allow-no-subscriptions \
             --output none
           TENANT_ID=$(az account list --all --query "[0].tenantId" -o tsv)

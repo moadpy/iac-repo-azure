@@ -133,3 +133,51 @@ resource "azurerm_role_assignment" "function_storage_blob" {
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = var.function_app_principal_id
 }
+
+# ---------------------------------------------------------------------------
+# Workload Identity: Federated Credential for Backend Pods
+# ---------------------------------------------------------------------------
+resource "azuread_application_federated_identity_credential" "backend" {
+  application_id = azuread_application.backend_app.id
+  display_name   = "rca-backend-federated-identity"
+  description    = "Trust the rca-backend service account in rca-dev namespace"
+  audiences      = ["api://AzureADTokenExchange"]
+  issuer         = var.aks_oidc_issuer_url
+  subject        = "system:serviceaccount:rca-dev:rca-backend"
+}
+
+# ---------------------------------------------------------------------------
+# Key Vault Access: Backend SP → Key Vault (Get, List)
+# ---------------------------------------------------------------------------
+resource "azurerm_key_vault_access_policy" "backend" {
+  key_vault_id = var.key_vault_id
+  tenant_id    = azuread_service_principal.backend_sp.application_tenant_id
+  object_id    = azuread_service_principal.backend_sp.object_id
+
+  secret_permissions = ["Get", "List"]
+}
+
+# ---------------------------------------------------------------------------
+# RBAC: Current User (Terraform Caller) → AKS (RBAC Cluster Admin)
+# ---------------------------------------------------------------------------
+resource "azurerm_role_assignment" "caller_aks_admin" {
+  scope                = var.aks_cluster_id
+  role_definition_name = "Azure Kubernetes Service RBAC Cluster Admin"
+  principal_id         = var.caller_object_id
+}
+
+# ---------------------------------------------------------------------------
+# RBAC: AKS identity → AGC permissions
+# Required for the ALB Controller to manage the Application Load Balancer
+# ---------------------------------------------------------------------------
+resource "azurerm_role_assignment" "aks_agc_manager" {
+  scope                = var.resource_group_id
+  role_definition_name = "AppGw for Containers Configuration Manager"
+  principal_id         = var.aks_cluster_identity_principal_id
+}
+
+resource "azurerm_role_assignment" "aks_agc_network" {
+  scope                = var.agc_subnet_id
+  role_definition_name = "Network Contributor"
+  principal_id         = var.aks_cluster_identity_principal_id
+}

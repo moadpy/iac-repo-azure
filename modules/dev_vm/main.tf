@@ -7,20 +7,6 @@
 # ===========================================================================
 
 # --- Networking ---
-resource "azurerm_virtual_network" "dev" {
-  name                = "vnet-dev-backend-${var.suffix}"
-  address_space       = [var.vnet_cidr]
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  tags                = var.tags
-}
-
-resource "azurerm_subnet" "dev" {
-  name                 = "snet-dev-backend"
-  resource_group_name  = var.resource_group_name
-  virtual_network_name = azurerm_virtual_network.dev.name
-  address_prefixes     = [var.subnet_cidr]
-}
 
 resource "azurerm_public_ip" "dev" {
   name                = "pip-dev-backend-${var.suffix}"
@@ -70,7 +56,7 @@ resource "azurerm_network_interface" "dev" {
 
   ip_configuration {
     name                          = "internal"
-    subnet_id                     = azurerm_subnet.dev.id
+    subnet_id                     = var.subnet_id
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.dev.id
   }
@@ -102,6 +88,7 @@ resource "azurerm_linux_virtual_machine" "dev" {
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
+    disk_size_gb         = 30
   }
 
   source_image_reference {
