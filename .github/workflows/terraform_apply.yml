@@ -37,10 +37,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create SSH key for Dev VM
+      - name: Configure SSH key for Dev VM
         run: |
           mkdir -p ~/.ssh
-          ssh-keygen -t rsa -q -N "" -f ~/.ssh/id_rsa
+          echo "${{ secrets.DEV_VM_SSH_PUBLIC_KEY }}" > ~/.ssh/id_rsa.pub
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3

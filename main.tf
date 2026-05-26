@@ -27,9 +27,7 @@ resource "random_string" "suffix" {
 
 
 
-resource "azurerm_resource_provider_registration" "app" {
-  name = "Microsoft.App"
-}
+
 
 
 
@@ -220,6 +218,13 @@ module "identity" {
   agc_subnet_id                      = module.network.agc_subnet_id
   deploy_aks                         = true
 
+  backend_client_id            = var.backend_client_id
+  backend_sp_object_id         = var.backend_sp_object_id
+  backend_client_secret        = var.backend_client_secret
+  github_actions_client_id     = var.github_actions_client_id
+  github_actions_sp_object_id  = var.github_actions_sp_object_id
+  github_actions_client_secret = var.github_actions_client_secret
+
   depends_on = [module.azure_openai, module.ai_search, module.cosmos_db, module.storage, module.functions, module.aks, module.key_vault]
 }
 
@@ -261,7 +266,7 @@ module "network" {
   hub_vnet_resource_group_name = var.hub_vnet_resource_group_name
   tags                         = local.tags
 
-  depends_on = [azurerm_resource_provider_registration.app]
+
 }
 
 # ─────────────────────────────────────────
@@ -307,21 +312,7 @@ module "aks" {
   depends_on = [module.acr, module.monitoring, module.network]
 }
 
-# ---------------------------------------------------------------------------
-# RBAC: AKS identity → AGC permissions
-# Required for the ALB Controller to manage the Application Load Balancer
-# ---------------------------------------------------------------------------
-resource "azurerm_role_assignment" "aks_agc_manager" {
-  scope                = azurerm_resource_group.main.id
-  role_definition_name = "AppGw for Containers Configuration Manager"
-  principal_id         = module.aks.cluster_identity_principal_id
-}
 
-resource "azurerm_role_assignment" "aks_agc_network" {
-  scope                = module.network.agc_subnet_id
-  role_definition_name = "Network Contributor"
-  principal_id         = module.aks.cluster_identity_principal_id
-}
 
 # ─────────────────────────────────────────
 # 15. Azure Front Door

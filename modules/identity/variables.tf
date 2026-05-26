@@ -72,6 +72,42 @@ variable "agc_subnet_id" {
   default     = ""
 }
 
+variable "tags" {
+  description = "Tags to apply to all resources"
+  type        = map(string)
+  default     = {}
+}
+
+variable "backend_client_id" {
+  type    = string
+  default = ""
+}
+
+variable "backend_sp_object_id" {
+  type    = string
+  default = ""
+}
+
+variable "backend_client_secret" {
+  type    = string
+  default = ""
+}
+
+variable "github_actions_client_id" {
+  type    = string
+  default = ""
+}
+
+variable "github_actions_sp_object_id" {
+  type    = string
+  default = ""
+}
+
+variable "github_actions_client_secret" {
+  type    = string
+  default = ""
+}
+
 variable "aks_oidc_issuer_url" {
   description = "OIDC Issuer URL of the AKS cluster"
   type        = string

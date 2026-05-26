@@ -200,6 +200,47 @@ variable "tags" {
 }
 
 # ---------------------------------------------------------------------------
+# Manual Microsoft Entra ID (Azure AD) App Registrations
+# ---------------------------------------------------------------------------
+variable "backend_client_id" {
+  description = "Manually created Backend App Registration Client ID"
+  type        = string
+  default     = ""
+}
+
+variable "backend_sp_object_id" {
+  description = "Manually created Backend Service Principal Object ID"
+  type        = string
+  default     = ""
+}
+
+variable "backend_client_secret" {
+  description = "Manually created Backend Service Principal Client Secret"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "github_actions_client_id" {
+  description = "Manually created GitHub Actions App Registration Client ID"
+  type        = string
+  default     = ""
+}
+
+variable "github_actions_sp_object_id" {
+  description = "Manually created GitHub Actions Service Principal Object ID"
+  type        = string
+  default     = ""
+}
+
+variable "github_actions_client_secret" {
+  description = "Manually created GitHub Actions Service Principal Client Secret"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+# ---------------------------------------------------------------------------
 # Network & Subnet Configurations
 # ---------------------------------------------------------------------------
 variable "dev_subnet_cidr" {

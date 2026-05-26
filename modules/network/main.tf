@@ -121,6 +121,14 @@ resource "azurerm_bastion_host" "spoke_dev" {
   resource_group_name = var.resource_group_name
   sku                 = "Developer"
   virtual_network_id  = azurerm_virtual_network.vnet.id
+
+  depends_on = [
+    azurerm_subnet.aks_nodes,
+    azurerm_subnet.agc,
+    azurerm_subnet.pe,
+    azurerm_subnet.functions,
+    azurerm_subnet.dev
+  ]
 }
 
 # ---------------------------------------------------------------------------
