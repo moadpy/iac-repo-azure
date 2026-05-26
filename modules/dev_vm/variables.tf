@@ -13,16 +13,9 @@ variable "suffix" {
   type        = string
 }
 
-variable "vnet_cidr" {
-  description = "CIDR block for the dev VNet"
+variable "subnet_id" {
+  description = "Resource ID of the subnet where the dev VM will be deployed"
   type        = string
-  default     = "10.0.0.0/16"
-}
-
-variable "subnet_cidr" {
-  description = "CIDR block for the dev subnet"
-  type        = string
-  default     = "10.0.1.0/24"
 }
 
 variable "vm_size" {

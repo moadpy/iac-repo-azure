@@ -24,3 +24,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "caller_ip" {
+  description = "Public IP address of the deployer to whitelist"
+  type        = string
+  default     = ""
+}

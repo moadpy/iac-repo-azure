@@ -34,7 +34,7 @@ variable "partition_key_path" {
 variable "public_network_access" {
   description = "Whether public network access is enabled"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "tags" {

@@ -97,3 +97,8 @@ variable "runbooks_storage_connection_string" {
   sensitive   = true
   default     = ""
 }
+
+variable "functions_subnet_id" {
+  description = "Resource ID of the subnet for the Azure Functions VNet integration"
+  type        = string
+}

@@ -53,3 +53,39 @@ variable "function_app_principal_id" {
   description = "Principal ID of the Function App Managed Identity"
   type        = string
 }
+
+variable "aks_cluster_id" {
+  description = "Resource ID of the AKS cluster (optional, for user RBAC)"
+  type        = string
+  default     = ""
+}
+
+variable "aks_cluster_identity_principal_id" {
+  description = "Principal ID of the AKS cluster identity"
+  type        = string
+  default     = ""
+}
+
+variable "agc_subnet_id" {
+  description = "Resource ID of the AGC subnet"
+  type        = string
+  default     = ""
+}
+
+variable "aks_oidc_issuer_url" {
+  description = "OIDC Issuer URL of the AKS cluster"
+  type        = string
+  default     = ""
+}
+
+variable "key_vault_id" {
+  description = "Resource ID of the Key Vault"
+  type        = string
+  default     = ""
+}
+
+variable "deploy_aks" {
+  description = "Whether AKS is being deployed (used for deterministic count)"
+  type        = bool
+  default     = false
+}

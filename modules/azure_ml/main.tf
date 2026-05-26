@@ -4,14 +4,15 @@
 # ===========================================================================
 
 resource "azurerm_machine_learning_workspace" "main" {
-  name                    = var.workspace_name
-  resource_group_name     = var.resource_group_name
-  location                = var.location
-  application_insights_id = var.application_insights_id
-  key_vault_id            = var.key_vault_id
-  storage_account_id      = var.storage_account_id
-  container_registry_id   = var.container_registry_id
-  tags                    = var.tags
+  name                          = var.workspace_name
+  resource_group_name           = var.resource_group_name
+  location                      = var.location
+  application_insights_id       = var.application_insights_id
+  key_vault_id                  = var.key_vault_id
+  storage_account_id            = var.storage_account_id
+  container_registry_id         = var.container_registry_id
+  public_network_access_enabled = false
+  tags                          = var.tags
 
   identity {
     type = "SystemAssigned"

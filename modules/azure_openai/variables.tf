@@ -6,7 +6,7 @@ variable "resource_group_name" {
 variable "openai_location" {
   description = "Azure region for Azure OpenAI (not all regions support it)"
   type        = string
-  default     = "westeurope"
+  default     = "eastus"
 }
 
 variable "suffix" {
@@ -17,14 +17,14 @@ variable "suffix" {
 variable "public_network_access" {
   description = "Whether public network access is enabled (true for dev, false for prod with PE)"
   type        = bool
-  default     = true
+  default     = false
 }
 
 # --- Chat model variables ---
 variable "chat_model_name" {
   description = "Name of the chat model to deploy"
   type        = string
-  default     = "gpt-4o-mini"
+  default     = "gpt-5o-mini"
 }
 
 variable "chat_model_version" {
@@ -40,7 +40,7 @@ variable "chat_sku_name" {
 }
 
 variable "chat_sku_capacity" {
-  description = "Capacity (TPU) for chat deployment"
+  description = "Capacity (TPM) for chat deployment"
   type        = number
   default     = 10
 }
@@ -65,7 +65,7 @@ variable "embedding_sku_name" {
 }
 
 variable "embedding_sku_capacity" {
-  description = "Capacity (TPU) for embedding deployment"
+  description = "Capacity (TPm) for embedding deployment"
   type        = number
   default     = 120
 }

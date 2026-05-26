@@ -8,8 +8,7 @@
 variable "subscription_id" {
   description = "Azure Subscription ID (required for AzureRM v4)"
   type        = string
-  # No default to force the user or pipeline to provide it, or let them set ARM_SUBSCRIPTION_ID
-  default = ""
+  default     = ""
 }
 
 variable "resource_group_name" {
@@ -19,13 +18,13 @@ variable "resource_group_name" {
 }
 
 variable "environment" {
-  description = "Deployment environment (dev or prod)"
+  description = "Deployment environment (preprod or prod)"
   type        = string
-  default     = "dev"
+  default     = "preprod"
 
   validation {
-    condition     = contains(["dev", "prod"], var.environment)
-    error_message = "Environment must be 'dev' or 'prod'."
+    condition     = contains(["preprod", "prod"], var.environment)
+    error_message = "Environment must be 'preprod' or 'prod'."
   }
 }
 
@@ -201,13 +200,32 @@ variable "tags" {
 }
 
 # ---------------------------------------------------------------------------
-# AKS (optional — toggle with deploy_aks)
+# Network & Subnet Configurations
 # ---------------------------------------------------------------------------
-variable "deploy_aks" {
-  description = "Whether to deploy the AKS cluster (set false to skip in cost-sensitive envs)"
+variable "dev_subnet_cidr" {
+  description = "CIDR block for the Dev VM / Jumpbox subnet"
+  type        = string
+  default     = "10.1.5.0/24"
+}
+
+variable "deploy_developer_bastion" {
+  description = "Whether to deploy a Developer SKU Bastion directly inside the Spoke VNet."
   type        = bool
   default     = false
 }
+
+variable "hub_vnet_name" {
+  description = "Name of the Hub VNet for peering. If empty, peering is disabled."
+  type        = string
+  default     = ""
+}
+
+variable "hub_vnet_resource_group_name" {
+  description = "Resource group name of the Hub VNet."
+  type        = string
+  default     = ""
+}
+
 
 variable "aks_kubernetes_version" {
   description = "Kubernetes version for the AKS cluster"
@@ -241,13 +259,13 @@ variable "aks_system_node_count" {
 variable "aks_deploy_user_node_pool" {
   description = "Whether to add a dedicated user node pool (ML workloads)"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "aks_user_node_vm_size" {
   description = "VM size for the AKS user node pool"
   type        = string
-  default     = "Standard_D4s_v3"
+  default     = "Standard_D2s_v3"
 }
 
 variable "aks_user_node_count" {
@@ -278,4 +296,37 @@ variable "aks_dns_service_ip" {
   description = "IP address for the Kubernetes DNS service (must be inside aks_service_cidr)"
   type        = string
   default     = "10.200.0.10"
+}
+
+variable "aks_agc_subnet_cidr" {
+  description = "CIDR block for the Application Gateway for Containers (AGC) subnet"
+  type        = string
+  default     = "10.1.4.0/24"
+}
+
+variable "pe_subnet_cidr" {
+  description = "CIDR block for the Private Endpoints subnet"
+  type        = string
+  default     = "10.1.6.0/24"
+}
+
+variable "functions_subnet_cidr" {
+  description = "CIDR block for the Azure Functions Flex Consumption VNet integration subnet"
+  type        = string
+  default     = "10.1.7.0/24"
+}
+
+# ---------------------------------------------------------------------------
+# Azure Front Door (optional — toggle with deploy_frontdoor)
+# ---------------------------------------------------------------------------
+variable "deploy_frontdoor" {
+  description = "Whether to deploy the Azure Front Door resource"
+  type        = bool
+  default     = false
+}
+
+variable "caller_ip" {
+  description = "Public IP address of the deployer to whitelist for storage access during deploy"
+  type        = string
+  default     = ""
 }

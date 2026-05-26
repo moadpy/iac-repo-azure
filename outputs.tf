@@ -127,32 +127,43 @@ output "FUNCTION_APP_HOSTNAME" {
 }
 
 # ---------------------------------------------------------------------------
-# AKS (conditional)
+# AKS
 # ---------------------------------------------------------------------------
 output "AKS_CLUSTER_NAME" {
-  description = "Name of the AKS cluster (if deployed)"
-  value       = var.deploy_aks ? module.aks[0].aks_name : null
+  description = "Name of the AKS cluster"
+  value       = module.aks.aks_name
 }
 
 output "AKS_CLUSTER_FQDN" {
-  description = "API server FQDN of the AKS cluster (if deployed)"
-  value       = var.deploy_aks ? module.aks[0].cluster_fqdn : null
+  description = "API server FQDN of the AKS cluster"
+  value       = module.aks.cluster_fqdn
 }
 
 output "AKS_OIDC_ISSUER_URL" {
-  description = "OIDC issuer URL for Workload Identity federation (if deployed)"
-  value       = var.deploy_aks ? module.aks[0].oidc_issuer_url : null
+  description = "OIDC issuer URL for Workload Identity federation"
+  value       = module.aks.oidc_issuer_url
 }
 
 output "AKS_KUBE_CONFIG_RAW" {
   description = "Raw kubeconfig — pipe to ~/.kube/config or use with KUBECONFIG (sensitive)"
-  value       = var.deploy_aks ? module.aks[0].kube_config_raw : null
+  value       = module.aks.kube_config_raw
   sensitive   = true
 }
 
 output "AKS_NODE_RESOURCE_GROUP" {
   description = "Auto-generated resource group that holds AKS infrastructure nodes"
-  value       = var.deploy_aks ? module.aks[0].node_resource_group : null
+  value       = module.aks.node_resource_group
 }
 
+output "ALB_CONTROLLER_IDENTITY_CLIENT_ID" {
+  description = "Client ID of the Managed Identity for the ALB Controller"
+  value       = module.agc.alb_controller_identity_client_id
+}
 
+# ---------------------------------------------------------------------------
+# Azure Front Door (conditional)
+# ---------------------------------------------------------------------------
+output "FRONTDOOR_ENDPOINT" {
+  description = "The Front Door Endpoint Host Name (if deployed)"
+  value       = var.deploy_frontdoor ? module.frontdoor[0].frontdoor_endpoint_host_name : null
+}
