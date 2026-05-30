@@ -14,15 +14,19 @@ resource "azurerm_machine_learning_workspace" "main" {
   public_network_access_enabled = false
   tags                          = var.tags
 
+  managed_network {
+    isolation_mode = "AllowInternetOutbound"
+  }
+
   identity {
     type = "SystemAssigned"
   }
 }
 
-# AcrPull — lets Azure ML pull the training Docker image from the registry
-resource "azurerm_role_assignment" "aml_acr_pull" {
+# AcrPush — lets Azure ML build and push custom Docker environments to the registry
+resource "azurerm_role_assignment" "aml_acr_push" {
   scope                = var.container_registry_id
-  role_definition_name = "AcrPull"
+  role_definition_name = "AcrPush"
   principal_id         = azurerm_machine_learning_workspace.main.identity[0].principal_id
 }
 
