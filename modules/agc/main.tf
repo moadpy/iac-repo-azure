@@ -33,11 +33,11 @@ resource "azurerm_role_assignment" "alb_controller_network" {
 
 # Federated Identity Credential (Trust the alb-controller pod in azure-alb-system namespace)
 resource "azurerm_federated_identity_credential" "alb_controller" {
-  name                       = "fed-alb-controller-${var.suffix}"
-  audience                   = ["api://AzureADTokenExchange"]
-  issuer                     = var.aks_oidc_issuer_url
-  user_assigned_identity_id  = azurerm_user_assigned_identity.alb_controller.id
-  subject                    = "system:serviceaccount:azure-alb-system:alb-controller-sa"
+  name                      = "fed-alb-controller-${var.suffix}"
+  audience                  = ["api://AzureADTokenExchange"]
+  issuer                    = var.aks_oidc_issuer_url
+  user_assigned_identity_id = azurerm_user_assigned_identity.alb_controller.id
+  subject                   = "system:serviceaccount:azure-alb-system:alb-controller-sa"
 }
 
 # RBAC: ALB Identity -> AKS Node Resource Group (Configuration Manager)

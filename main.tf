@@ -200,23 +200,23 @@ module "functions" {
 module "identity" {
   source = "./modules/identity"
 
-  resource_group_name                = azurerm_resource_group.main.name
-  resource_group_id                  = azurerm_resource_group.main.id
-  suffix                             = local.clean_suffix
-  environment                        = var.environment
-  caller_object_id                   = data.azurerm_client_config.current.object_id
-  openai_account_id                  = module.azure_openai.openai_id
-  search_service_id                  = module.ai_search.search_service_id
-  cosmosdb_account_id                = module.cosmos_db.cosmosdb_account_id
-  cosmosdb_account_name              = module.cosmos_db.cosmosdb_account_name
-  storage_account_id                 = module.storage.storage_account_id
-  function_app_principal_id          = module.functions.function_app_principal_id
-  aks_cluster_id                     = module.aks.aks_id
-  aks_oidc_issuer_url                = module.aks.oidc_issuer_url
-  key_vault_id                       = module.key_vault.key_vault_id
+  resource_group_name               = azurerm_resource_group.main.name
+  resource_group_id                 = azurerm_resource_group.main.id
+  suffix                            = local.clean_suffix
+  environment                       = var.environment
+  caller_object_id                  = data.azurerm_client_config.current.object_id
+  openai_account_id                 = module.azure_openai.openai_id
+  search_service_id                 = module.ai_search.search_service_id
+  cosmosdb_account_id               = module.cosmos_db.cosmosdb_account_id
+  cosmosdb_account_name             = module.cosmos_db.cosmosdb_account_name
+  storage_account_id                = module.storage.storage_account_id
+  function_app_principal_id         = module.functions.function_app_principal_id
+  aks_cluster_id                    = module.aks.aks_id
+  aks_oidc_issuer_url               = module.aks.oidc_issuer_url
+  key_vault_id                      = module.key_vault.key_vault_id
   aks_cluster_identity_principal_id = module.aks.cluster_identity_principal_id
-  agc_subnet_id                      = module.network.agc_subnet_id
-  deploy_aks                         = true
+  agc_subnet_id                     = module.network.agc_subnet_id
+  deploy_aks                        = true
 
   backend_client_id            = var.backend_client_id
   backend_sp_object_id         = var.backend_sp_object_id
@@ -337,20 +337,20 @@ module "frontdoor" {
 module "private_endpoints" {
   source = "./modules/private_endpoints"
 
-  resource_group_name          = azurerm_resource_group.main.name
-  location                     = var.location
-  suffix                       = local.clean_suffix
-  vnet_id                      = module.network.vnet_id
-  pe_subnet_id                 = module.network.pe_subnet_id
-  key_vault_id                 = module.key_vault.key_vault_id
-  storage_account_id           = module.storage.storage_account_id
-  function_storage_account_id  = module.functions.function_app_storage_id
-  acr_id                       = module.acr.acr_id
-  cosmosdb_account_id          = module.cosmos_db.cosmosdb_account_id
-  openai_account_id            = module.azure_openai.openai_id
-  search_service_id            = module.ai_search.search_service_id
-  ml_workspace_id              = module.azure_ml.workspace_id
-  tags                         = local.tags
+  resource_group_name         = azurerm_resource_group.main.name
+  location                    = var.location
+  suffix                      = local.clean_suffix
+  vnet_id                     = module.network.vnet_id
+  pe_subnet_id                = module.network.pe_subnet_id
+  key_vault_id                = module.key_vault.key_vault_id
+  storage_account_id          = module.storage.storage_account_id
+  function_storage_account_id = module.functions.function_app_storage_id
+  acr_id                      = module.acr.acr_id
+  cosmosdb_account_id         = module.cosmos_db.cosmosdb_account_id
+  openai_account_id           = module.azure_openai.openai_id
+  search_service_id           = module.ai_search.search_service_id
+  ml_workspace_id             = module.azure_ml.workspace_id
+  tags                        = local.tags
 
   depends_on = [
     module.network,
