@@ -275,12 +275,13 @@ module "network" {
 module "agc" {
   source = "./modules/agc"
 
-  resource_group_name = azurerm_resource_group.main.name
-  location            = var.location
-  suffix              = local.clean_suffix
-  agc_subnet_id       = module.network.agc_subnet_id
-  aks_oidc_issuer_url = module.aks.oidc_issuer_url
-  tags                = local.tags
+  resource_group_name     = azurerm_resource_group.main.name
+  location                = var.location
+  suffix                  = local.clean_suffix
+  agc_subnet_id           = module.network.agc_subnet_id
+  aks_oidc_issuer_url     = module.aks.oidc_issuer_url
+  aks_node_resource_group = module.aks.node_resource_group
+  tags                    = local.tags
 }
 
 # ─────────────────────────────────────────

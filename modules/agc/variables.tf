@@ -33,3 +33,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "aks_node_resource_group" {
+  description = "Auto-generated resource group that holds AKS infrastructure nodes"
+  type        = string
+  default     = ""
+}
