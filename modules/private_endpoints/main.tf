@@ -275,7 +275,7 @@ resource "azurerm_private_endpoint" "aml" {
 
   # Azure ML requires two separate private DNS zones
   private_dns_zone_group {
-    name                 = "dns-group-aml"
+    name = "dns-group-aml"
     private_dns_zone_ids = [
       azurerm_private_dns_zone.aml_api.id,
       azurerm_private_dns_zone.aml_notebooks.id

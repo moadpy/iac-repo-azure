@@ -23,3 +23,13 @@ search_sku = "basic"
 # Architectural Hub reference variables (disabled/empty by default)
 hub_vnet_name                = ""
 hub_vnet_resource_group_name = ""
+
+# Service Principals & Secrets (Manually queried & generated from Azure Active Directory)
+github_actions_client_id     = "b9fea404-3dfd-4a80-b79e-a04c3376e43b"
+github_actions_sp_object_id  = "539ec714-146e-4822-bc1e-f6b121231734"
+github_actions_client_secret = ""
+
+backend_client_id     = "9f782595-01f1-4ea0-acd0-cb6048fe452a"
+backend_sp_object_id  = "870a1e89-7fe3-4298-9770-ade164ad7cd0"
+backend_client_secret = ""
+

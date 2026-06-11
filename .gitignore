@@ -39,3 +39,4 @@ terraform.tfvars
 scripts/bootstrap-session.sh
 scripts/bootstrap-session.ps1
 
+terraform_outputs.json

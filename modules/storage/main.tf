@@ -4,12 +4,12 @@
 # ===========================================================================
 
 resource "azurerm_storage_account" "ml" {
-  name                     = "samlops${var.suffix}"
-  resource_group_name      = var.resource_group_name
-  location                 = var.location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
-  min_tls_version          = "TLS1_2"
+  name                          = "samlops${var.suffix}"
+  resource_group_name           = var.resource_group_name
+  location                      = var.location
+  account_tier                  = "Standard"
+  account_replication_type      = "LRS"
+  min_tls_version               = "TLS1_2"
   public_network_access_enabled = true
 
   static_website {
@@ -17,7 +17,7 @@ resource "azurerm_storage_account" "ml" {
     error_404_document = "404.html"
   }
 
-  tags                     = var.tags
+  tags = var.tags
 }
 
 resource "azurerm_storage_container" "ml_data" {

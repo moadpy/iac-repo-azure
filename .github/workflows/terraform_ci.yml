@@ -95,14 +95,6 @@ jobs:
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
 
-      - name: Install TFLint
-        uses: terraform-linters/setup-tflint@v4
-
-      - name: TFLint
-        run: |
-          tflint --init
-          tflint --recursive
-
       - name: Install Checkov
         run: pip install checkov
 

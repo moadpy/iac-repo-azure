@@ -37,11 +37,11 @@ resource "azurerm_service_plan" "functions" {
 
 # 3. Linux Function App (Flex Consumption)
 resource "azurerm_function_app_flex_consumption" "ingestor" {
-  name                 = "func-ingestor-${var.suffix}"
-  location             = var.location
-  resource_group_name  = var.resource_group_name
-  service_plan_id      = azurerm_service_plan.functions.id
-  
+  name                = "func-ingestor-${var.suffix}"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  service_plan_id     = azurerm_service_plan.functions.id
+
   # Runtime settings
   runtime_name    = "python"
   runtime_version = "3.11"
@@ -55,12 +55,13 @@ resource "azurerm_function_app_flex_consumption" "ingestor" {
   # VNet integration subnet
   virtual_network_subnet_id = var.functions_subnet_id
 
-  site_config {}
+  site_config {
+    application_insights_connection_string = var.appinsights_connection_string
+  }
 
   app_settings = {
     # Runtime
-    "BUILD_FLAGS"                    = "UseExpressBuild"
-    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "true"
+    "BUILD_FLAGS" = "UseExpressBuild"
 
     # Azure OpenAI — endpoints only, auth via Managed Identity
     "AZURE_OPENAI_ENDPOINT"             = var.openai_endpoint
